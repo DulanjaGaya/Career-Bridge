@@ -3,10 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../api/axios';
 import { AuthContext } from '../../context/AuthContext';
-import Confetti from 'react-confetti';
-import { useWindowSize } from 'react-use';
-import { Trophy, Timer, Info, Users, CheckCircle, ChevronRight, XCircle, Crown } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const LobbyRoom = () => {
     const { id } = useParams();
