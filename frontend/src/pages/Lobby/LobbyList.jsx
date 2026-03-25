@@ -1,8 +1,8 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import api from '../../../api/axios';
-import { AuthContext } from '../../../context/AuthContext';
+import api from '../../api/axios';
+import { AuthContext } from '../../context/AuthContext';
 
 const LobbyList = () => {
     const [lobbies, setLobbies] = useState([]);

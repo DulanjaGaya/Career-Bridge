@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import api from '../../../api/axios';
+import api from '../../api/axios';
 
 const ResourceTracker = () => {
     const [resources, setResources] = useState([]);

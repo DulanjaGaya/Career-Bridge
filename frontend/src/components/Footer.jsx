@@ -1,5 +1,5 @@
 import React from 'react'
-import { Facebook, Twitter, Instagram, Linkedin } from 'lucide-react'
+import { Globe, Mail, ExternalLink, Users } from 'lucide-react'
 
 /**
  * Footer - Site footer with company info and social links
@@ -43,19 +43,19 @@ const Footer = () => {
 
           {/* Social Links */}
           <div>
-            <h4 className="font-bold mb-4 text-primary-400">Follow Us</h4>
+            <h4 className="font-bold mb-4 text-primary-400">Connect</h4>
             <div className="flex gap-4">
               <a href="#" className="text-gray-400 hover:text-primary-400 transition">
-                <Facebook size={20} />
+                <Globe size={20} />
               </a>
               <a href="#" className="text-gray-400 hover:text-primary-400 transition">
-                <Twitter size={20} />
+                <Mail size={20} />
               </a>
               <a href="#" className="text-gray-400 hover:text-primary-400 transition">
-                <Instagram size={20} />
+                <ExternalLink size={20} />
               </a>
               <a href="#" className="text-gray-400 hover:text-primary-400 transition">
-                <Linkedin size={20} />
+                <Users size={20} />
               </a>
             </div>
           </div>
