@@ -27,16 +27,14 @@ const LobbyRoom = () => {
                 const { data: lobbyData } = await api.get(`/lobbies/${id}`);
                 if (!isMounted) return;
                 
-                // If status changed or navigated
                 if (lobbyData.status === 'closed') {
-                    toast('This lobby has been closed.', { icon: 'ℹ️' });
+                    toast('This lobby has been closed.', { icon: 'ℹ️', style: { background: '#1E293B', color: '#F8FAFC' } });
                     navigate('/lobbies');
                     return;
                 }
                 
                 setLobby(lobbyData);
 
-                // Fetch Questions for topic ONCE if empty
                 if (questions.length === 0) {
                     const { data: qData } = await api.get(`/questions?topic=${lobbyData.topic}`);
                     setQuestions(qData);
@@ -45,7 +43,6 @@ const LobbyRoom = () => {
                         setTimeLeft(qData[lobbyData.currentQuestionIndex]?.timeLimit || 30);
                     }
                 } else if (lobbyData.currentQuestionIndex !== lobby?.currentQuestionIndex) {
-                    // Host moved to next question!
                     setCurrentQuestion(questions[lobbyData.currentQuestionIndex]);
                     setTimeLeft(questions[lobbyData.currentQuestionIndex]?.timeLimit || 30);
                     setShowResults(false);
@@ -54,7 +51,7 @@ const LobbyRoom = () => {
                     setResults([]);
                 }
             } catch (error) {
-                toast.error('Failed to sync lobby data');
+                toast.error('Failed to sync lobby data', { style: { background: '#1E293B', color: '#F8FAFC' } });
             }
         };
 
@@ -62,7 +59,7 @@ const LobbyRoom = () => {
 
         const pollInterval = setInterval(() => {
             fetchLobbyParams();
-        }, 5000); // Simple 5-second polling for updates
+        }, 5000);
 
         return () => {
             isMounted = false;
@@ -90,7 +87,6 @@ const LobbyRoom = () => {
 
     const handleTimeUp = async () => {
         setShowResults(true);
-        // Fetch results and scoreboard
         try {
             const { data: resData } = await api.get(`/answers/results/${id}/${currentQuestion._id}`);
             const { data: scoreData } = await api.get(`/answers/scoreboard/${id}`);
@@ -111,9 +107,8 @@ const LobbyRoom = () => {
                 questionId: currentQuestion._id,
                 selectedOption: option
             });
-            toast.success('Answer recorded!');
+            toast.success('Answer recorded!', { style: { background: '#1E293B', color: '#F97316' } });
         } catch (error) {
-            toast.error('Failed to submit answer');
             setHasSubmitted(false);
             setSelectedOption('');
         }
@@ -122,7 +117,7 @@ const LobbyRoom = () => {
     const handleNextQuestion = async () => {
         if (!lobby || lobby.host._id !== user._id) return;
         if (lobby.currentQuestionIndex + 1 >= questions.length) {
-            toast('No more questions in this topic!', { icon: '👏' });
+            toast('No more questions in this topic!', { icon: '👏', style: { background: '#1E293B', color: '#F8FAFC' } });
             return;
         }
         try {
@@ -130,9 +125,8 @@ const LobbyRoom = () => {
             setShowResults(false);
             setHasSubmitted(false);
             setSelectedOption('');
-            // local state update forced via polling or explicit fetch (polling will catch it)
         } catch (err) {
-            toast.error('Failed to move to next question');
+            toast.error('Failed to move to next question', { style: { background: '#1E293B', color: '#F8FAFC' } });
         }
     };
 
@@ -140,15 +134,14 @@ const LobbyRoom = () => {
         if (!lobby || lobby.host._id !== user._id) return;
         try {
             await api.patch(`/lobbies/${id}/close`);
-            toast.success('Lobby closed');
             navigate('/lobbies');
         } catch (err) {
-            toast.error('Failed to close lobby');
+            console.error('Failed to close lobby');
         }
     };
 
     if (!lobby || !currentQuestion) {
-        return <div className="p-12 text-center text-slate-500">Loading Interview Room...</div>;
+        return <div className="p-12 text-center text-brand-muted">Loading Interview Room...</div>;
     }
 
     const isHost = lobby.host._id === user._id;
@@ -156,15 +149,15 @@ const LobbyRoom = () => {
     return (
         <div className="container mx-auto p-4 md:p-6 max-w-6xl">
             {/* Top Bar */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="bg-brand-surface rounded-xl shadow border border-brand-border p-4 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                    <h1 className="text-2xl font-bold text-brand-text flex items-center gap-3">
                         {lobby.title}
-                        <span className="text-xs bg-primary-100 text-primary-700 font-semibold px-2 py-1 rounded-md uppercase tracking-wider">
+                        <span className="text-xs bg-brand-primary/10 border border-brand-primary/20 text-brand-primary font-semibold px-2 py-1 rounded-md uppercase tracking-wider">
                             {lobby.topic}
                         </span>
                     </h1>
-                    <p className="text-sm text-slate-500 mt-1">Host: {lobby.host.name} • Participants: {lobby.members.length}/{lobby.maxMembers}</p>
+                    <p className="text-sm text-brand-muted mt-1">Host: <span className="text-brand-text">{lobby.host.name}</span> • Participants: <span className="text-brand-text">{lobby.members.length}/{lobby.maxMembers}</span></p>
                 </div>
                 
                 {isHost && (
@@ -172,14 +165,14 @@ const LobbyRoom = () => {
                         {showResults && lobby.currentQuestionIndex + 1 < questions.length && (
                             <button 
                                 onClick={handleNextQuestion}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors"
+                                className="bg-brand-blue hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors border border-blue-600"
                             >
                                 Next Question
                             </button>
                         )}
                         <button 
                             onClick={handleCloseLobby}
-                            className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg font-medium transition-colors border border-red-200"
+                            className="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-2 rounded-lg font-medium transition-colors border border-red-500/20"
                         >
                             Close Room
                         </button>
@@ -191,49 +184,42 @@ const LobbyRoom = () => {
                 {/* Main Interaction Area */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Question Card */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col min-h-[400px]">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50 rounded-t-xl">
-                            <span className="font-semibold text-slate-600">Question {lobby.currentQuestionIndex + 1} of {questions.length}</span>
-                            <div className={`font-mono text-xl font-bold px-3 py-1 rounded-md ${timeLeft <= 10 && !showResults ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-200 text-slate-700'}`}>
+                    <div className="bg-brand-surface rounded-xl shadow-lg border border-brand-border flex flex-col min-h-[400px]">
+                        <div className="p-6 border-b border-brand-border flex justify-between items-center bg-brand-bg/50 rounded-t-xl">
+                            <span className="font-semibold text-brand-primary uppercase tracking-wider text-sm">Question {lobby.currentQuestionIndex + 1} of {questions.length}</span>
+                            <div className={`font-mono text-xl font-bold px-3 py-1 rounded-md border ${timeLeft <= 10 && !showResults ? 'bg-red-500/10 text-red-500 border-red-500/20 animate-pulse' : 'bg-brand-bg text-brand-text border-brand-border'}`}>
                                 ⏳ {timeLeft}s
                             </div>
                         </div>
                         
                         <div className="p-8 flex-grow flex flex-col justify-center">
-                            <h2 className="text-3xl font-medium text-slate-800 text-center mb-10 leading-relaxed">
+                            <h2 className="text-2xl md:text-3xl font-bold text-brand-text text-center mb-10 leading-relaxed">
                                 {currentQuestion.text}
                             </h2>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {currentQuestion.options.map((opt, idx) => {
-                                    // Determine button styles
-                                    let btnStyle = "bg-white border text-slate-700 border-slate-300 hover:border-primary-500 hover:bg-primary-50";
+                                    let btnStyle = "bg-brand-bg border border-brand-border text-brand-text hover:border-brand-primary/50 hover:bg-brand-primary/5";
                                     
                                     if (hasSubmitted && selectedOption === opt) {
-                                        btnStyle = "bg-primary-100 border-primary-500 text-primary-800 font-semibold ring-2 ring-primary-500 ring-offset-1";
+                                        btnStyle = "bg-brand-primary/10 border-brand-primary text-brand-primary font-bold shadow-[0_0_15px_rgba(249,115,22,0.15)]";
                                     }
 
-                                    // During results, highlight correct answers visually if we had access to correctAnswer (it was stripped by the API)
-                                    // Normally we would just see people's votes. Since we stripped it, we can look at our own 'results' array
-                                    // Actually, we don't have the explicit Correct string here unless we fetch it. 
-                                    // Wait, scoreboard indicates points, but not the exact text. For a simple MVP, the host explains it, or we rely on the DB.
-                                    // Let's just highlight what the user picked.
-                                    
                                     return (
                                         <button
                                             key={idx}
                                             disabled={hasSubmitted || showResults}
                                             onClick={() => submitAnswer(opt)}
-                                            className={`p-4 rounded-xl text-lg transition-all duration-200 shadow-sm ${btnStyle} disabled:cursor-default`}
+                                            className={`p-4 rounded-xl text-lg transition-all duration-200 shadow-sm ${btnStyle} disabled:cursor-default text-left`}
                                         >
-                                            {String.fromCharCode(65 + idx)}. {opt}
+                                            <span className="text-brand-muted mr-2">{String.fromCharCode(65 + idx)}.</span> {opt}
                                         </button>
                                     );
                                 })}
                             </div>
 
                             {showResults && (
-                                <div className="mt-8 p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-center font-medium">
+                                <div className="mt-8 p-4 bg-brand-primary/10 border border-brand-primary/30 rounded-lg text-brand-text text-center font-medium shadow-inner shadow-brand-primary/5">
                                     Time is up! Answers are locked in. Check the scoreboard!
                                 </div>
                             )}
@@ -244,22 +230,24 @@ const LobbyRoom = () => {
                 {/* Sidebar */}
                 <div className="space-y-6">
                     {/* Scoreboard */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div className="bg-primary-600 text-white p-4">
+                    <div className="bg-brand-surface rounded-xl shadow-lg border border-brand-border overflow-hidden">
+                        <div className="bg-gradient-to-r from-brand-primary to-brand-primaryHover text-white border-b border-brand-border p-4">
                             <h3 className="font-bold flex items-center gap-2">🏆 Live Scoreboard</h3>
                         </div>
                         <div className="p-0">
                             {scoreboard.length === 0 ? (
-                                <p className="p-4 text-center text-slate-500 italic text-sm">Waiting for first answers...</p>
+                                <p className="p-4 text-center text-brand-muted italic text-sm">Waiting for first answers...</p>
                             ) : (
-                                <ul className="divide-y divide-slate-100">
+                                <ul className="divide-y divide-brand-border/50">
                                     {scoreboard.map((entry, idx) => (
-                                        <li key={idx} className="flex justify-between items-center p-4 hover:bg-slate-50 transition-colors">
+                                        <li key={idx} className="flex justify-between items-center p-4 hover:bg-brand-bg/50 transition-colors">
                                             <div className="flex items-center gap-3">
-                                                <span className="w-6 text-center font-bold text-slate-400">{idx + 1}</span>
-                                                <span className="font-medium text-slate-700">{entry.name}</span>
+                                                <span className="w-6 text-center font-bold text-brand-muted">{idx + 1}</span>
+                                                <span className="font-medium text-brand-text">{entry.name}</span>
                                             </div>
-                                            <span className="font-bold text-primary-600 bg-primary-50 px-3 py-1 rounded-full">{entry.score} pts</span>
+                                            <span className="font-bold text-brand-primary bg-brand-primary/10 border border-brand-primary/20 px-3 py-1 rounded-full text-sm">
+                                                {entry.score} pts
+                                            </span>
                                         </li>
                                     ))}
                                 </ul>
@@ -268,19 +256,19 @@ const LobbyRoom = () => {
                     </div>
 
                     {/* Participants */}
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-                        <div className="border-b border-slate-100 p-4">
-                            <h3 className="font-bold text-slate-800">Room Participants</h3>
+                    <div className="bg-brand-surface rounded-xl shadow-lg border border-brand-border">
+                        <div className="border-b border-brand-border p-4 bg-brand-bg/50 rounded-t-xl">
+                            <h3 className="font-bold text-brand-text uppercase tracking-wider text-xs">Room Participants</h3>
                         </div>
-                        <ul className="divide-y divide-slate-100 max-h-64 overflow-y-auto">
+                        <ul className="divide-y divide-brand-border max-h-64 overflow-y-auto">
                             {lobby.members.map((m) => (
-                                <li key={m._id} className="p-3 flex items-center gap-3 text-sm text-slate-600">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-primary-100 flex items-center justify-center text-primary-700 font-bold shadow-inner">
+                                <li key={m._id} className="p-3 flex items-center gap-3 text-sm text-brand-text">
+                                    <div className="w-8 h-8 rounded-full bg-brand-bg border border-brand-border flex items-center justify-center text-brand-primary font-bold shadow-inner">
                                         {m.name.charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="flex-grow">{m.name} {m._id === user._id ? '(You)' : ''}</span>
+                                    <span className="flex-grow">{m.name} {m._id === user._id ? <span className="text-brand-muted font-normal">(You)</span> : ''}</span>
                                     {m._id === lobby.host._id && (
-                                        <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded uppercase font-bold tracking-wide">Host</span>
+                                        <span className="text-[10px] bg-brand-blue/10 border border-brand-blue/20 text-brand-blue px-2 py-0.5 rounded uppercase font-bold tracking-wide">Host</span>
                                     )}
                                 </li>
                             ))}

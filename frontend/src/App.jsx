@@ -20,9 +20,9 @@ const Home = () => (
 
 function App() {
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col">
+        <div className="min-h-screen bg-brand-bg flex flex-col">
             <Navbar />
-            <Toaster position="top-right" />
+            <Toaster position="top-right" toastOptions={{ style: { background: '#1E293B', color: '#F8FAFC' } }} />
             
             <main className="flex-grow">
                 <Routes>

@@ -12,18 +12,18 @@ const Navbar = () => {
     };
 
     return (
-        <nav className="bg-white shadow-sm p-4 sticky top-0 z-50">
+        <nav className="bg-brand-surface border-b border-brand-border p-4 sticky top-0 z-50">
             <div className="container mx-auto flex justify-between items-center">
                 <div className="flex items-center gap-6">
-                    <Link to="/" className="text-xl font-bold text-primary-600">
-                        InterviewPrep
+                    <Link to="/" className="text-xl font-bold text-brand-primary">
+                        Career Bridge
                     </Link>
                     {user && (
                         <>
-                            <Link to="/lobbies" className="text-slate-600 font-medium hover:text-primary-600 transition-colors">
+                            <Link to="/lobbies" className="text-brand-muted font-medium hover:text-brand-primary transition-colors">
                                 Mock Lobbies
                             </Link>
-                            <Link to="/resources" className="text-slate-600 font-medium hover:text-primary-600 transition-colors">
+                            <Link to="/resources" className="text-brand-muted font-medium hover:text-brand-primary transition-colors">
                                 Resources
                             </Link>
                         </>
@@ -32,21 +32,21 @@ const Navbar = () => {
                 <div className="flex gap-4 items-center">
                     {user ? (
                         <>
-                            <span className="text-gray-600 font-medium">Hello, {user.name}</span>
+                            <span className="text-brand-text font-medium">Hello, <span className="text-brand-primary">{user.name}</span></span>
                             <button
                                 onClick={handleLogout}
-                                className="bg-red-50 text-red-600 px-4 py-2 rounded-md hover:bg-red-100 transition-colors"
+                                className="bg-red-500/10 text-red-500 border border-red-500/20 px-4 py-2 rounded-md hover:bg-red-500/20 transition-colors"
                             >
                                 Logout
                             </button>
                         </>
                     ) : (
                         <>
-                            <Link to="/login" className="text-gray-600 hover:text-primary-600 font-medium transition-colors">
-                                Login
+                            <Link to="/login" className="text-brand-muted hover:text-brand-primary font-medium transition-colors">
+                                Sign In
                             </Link>
-                            <Link to="/register" className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 transition-colors">
-                                Register
+                            <Link to="/register" className="bg-brand-primary text-white border border-brand-primaryHover px-6 py-2 rounded-md hover:bg-brand-primaryHover transition-all shadow-lg shadow-brand-primary/20">
+                                Get Started
                             </Link>
                         </>
                     )}

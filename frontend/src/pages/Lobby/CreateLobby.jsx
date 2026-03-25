@@ -34,33 +34,33 @@ const CreateLobby = () => {
         <div className="container mx-auto p-6 max-w-2xl">
             <button 
                 onClick={() => navigate('/lobbies')}
-                className="text-slate-500 hover:text-slate-800 mb-6 flex items-center font-medium transition-colors"
+                className="text-brand-muted hover:text-brand-primary mb-6 flex items-center font-medium transition-colors"
             >
                 ← Back to Lobbies
             </button>
             
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
-                <h1 className="text-2xl font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4">Create Mock Interview Room</h1>
+            <div className="bg-brand-surface rounded-xl shadow-lg border border-brand-border p-8">
+                <h1 className="text-2xl font-bold text-brand-text mb-6 border-b border-brand-border pb-4">Create Mock Interview Room</h1>
                 
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Room Title <span className="text-red-500">*</span></label>
+                        <label className="block text-sm font-medium text-brand-text mb-1">Room Title <span className="text-brand-primary">*</span></label>
                         <input
                             type="text"
                             required
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-primary-500 transition-all font-sans"
+                            className="w-full bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all font-sans placeholder-brand-muted/50"
                             placeholder="e.g., Evening DSA Practice Session"
                         />
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Topic <span className="text-red-500">*</span></label>
+                        <label className="block text-sm font-medium text-brand-text mb-1">Topic <span className="text-brand-primary">*</span></label>
                         <select
                             value={topic}
                             onChange={(e) => setTopic(e.target.value)}
-                            className="w-full border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-primary-500 transition-all bg-white font-sans"
+                            className="w-full bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all font-sans"
                         >
                             <option value="DSA">Data Structures & Algorithms (DSA)</option>
                             <option value="OOP">Object-Oriented Programming (OOP)</option>
@@ -71,25 +71,25 @@ const CreateLobby = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                        <label className="block text-sm font-medium text-brand-text mb-1">Description</label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             rows="3"
-                            className="w-full border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-primary-500 transition-all font-sans resize-none"
+                            className="w-full bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all font-sans resize-none placeholder-brand-muted/50"
                             placeholder="Optional... Let others know what to expect."
                         />
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Maximum Participants</label>
+                        <label className="block text-sm font-medium text-brand-text mb-1">Maximum Participants</label>
                         <input
                             type="number"
                             min="2"
                             max="20"
                             value={maxMembers}
                             onChange={(e) => setMaxMembers(e.target.value)}
-                            className="w-full border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-primary-500 transition-all font-sans"
+                            className="w-full bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all font-sans"
                         />
                     </div>
 
@@ -97,7 +97,7 @@ const CreateLobby = () => {
                         <button 
                             type="submit" 
                             disabled={loading}
-                            className="w-full bg-primary-600 text-white font-medium py-3 rounded-lg hover:bg-primary-700 transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="w-full bg-brand-primary text-white font-medium py-3 rounded-lg hover:bg-brand-primaryHover border border-brand-primaryHover shadow-lg shadow-brand-primary/20 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                             {loading ? 'Creating...' : 'Start Interview Room'}
                         </button>

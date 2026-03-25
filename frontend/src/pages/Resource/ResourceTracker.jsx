@@ -15,7 +15,6 @@ const ResourceTracker = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch Resources w/ Filters
                 const queryParams = new URLSearchParams();
                 if (topicFilter) queryParams.append('topic', topicFilter);
                 if (difficultyFilter) queryParams.append('difficulty', difficultyFilter);
@@ -44,13 +43,12 @@ const ResourceTracker = () => {
             
             if (data.status === 'completed') {
                 setCompletedIds(prev => [...prev, resourceId]);
-                toast.success('Marked as completed!');
+                toast.success('Marked as completed!', { style: { background: '#1E293B', color: '#10B981' } });
             } else {
                 setCompletedIds(prev => prev.filter(id => id !== resourceId));
-                toast('Marked as pending', { icon: '🔄' });
+                toast('Marked as pending', { icon: '🔄', style: { background: '#1E293B', color: '#F8FAFC' } });
             }
 
-            // Refresh summary
             const progResponse = await api.get('/progress/summary');
             setSummary(progResponse.data.stats);
 
@@ -59,50 +57,50 @@ const ResourceTracker = () => {
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-slate-500">Loading resources...</div>;
+    if (loading) return <div className="p-8 text-center text-brand-muted">Loading resources...</div>;
 
     const totalResources = resources.length;
     const completionPercentage = totalResources === 0 ? 0 : Math.round((completedIds.length / totalResources) * 100);
 
     return (
         <div className="container mx-auto p-6 max-w-6xl">
-            <h1 className="text-3xl font-bold text-slate-800 mb-6">Resource Tracker</h1>
+            <h1 className="text-3xl font-bold text-brand-text mb-6">Resource Tracker</h1>
             
             {/* Progress Summary Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
-                <h2 className="text-xl font-bold text-slate-700 mb-4">Your Progress</h2>
+            <div className="bg-brand-surface rounded-xl shadow-lg border border-brand-border p-6 mb-8">
+                <h2 className="text-xl font-bold text-brand-text mb-4">Your Progress</h2>
                 
-                <div className="flex items-center gap-4 mb-6">
-                    <div className="w-full bg-slate-100 rounded-full h-4 overflow-hidden border border-slate-200">
+                <div className="flex flex-col md:flex-row items-center gap-6 mb-8">
+                    <div className="w-full bg-brand-bg rounded-full h-4 overflow-hidden border border-brand-border flex-grow">
                         <div 
-                            className="bg-primary-500 h-4 rounded-full transition-all duration-500 ease-out" 
+                            className="bg-gradient-to-r from-brand-primary to-brand-primaryHover h-4 rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(249,115,22,0.8)]" 
                             style={{ width: `${completionPercentage}%` }}
                         ></div>
                     </div>
-                    <span className="font-bold text-slate-600 whitespace-nowrap">{completionPercentage}% Total</span>
+                    <span className="font-bold text-brand-text whitespace-nowrap text-lg px-4 py-1 bg-brand-primary/10 border border-brand-primary/20 rounded-lg">{completionPercentage}% Total</span>
                 </div>
 
-                <div className="flex flex-wrap gap-6">
-                    <div className="bg-emerald-50 text-emerald-700 px-4 py-3 rounded-lg border border-emerald-100 min-w-[150px]">
-                        <p className="text-sm font-semibold opacity-80 uppercase tracking-wider mb-1">Items Completed</p>
+                <div className="flex flex-wrap gap-4">
+                    <div className="bg-emerald-500/10 text-emerald-500 px-5 py-4 rounded-xl border border-emerald-500/20 min-w-[150px] shadow-sm">
+                        <p className="text-sm font-bold opacity-80 uppercase tracking-wider mb-1">Items Completed</p>
                         <p className="text-3xl font-bold">{summary.totalCompleted}</p>
                     </div>
                     
                     {Object.entries(summary.topics).map(([topic, count]) => (
-                        <div key={topic} className="bg-slate-50 text-slate-700 px-4 py-3 rounded-lg border border-slate-100 min-w-[150px]">
-                            <p className="text-xs font-semibold opacity-80 uppercase tracking-wider mb-1">{topic}</p>
-                            <p className="text-2xl font-bold">{count} <span className="text-sm font-normal opacity-70">done</span></p>
+                        <div key={topic} className="bg-brand-bg text-brand-text px-5 py-4 rounded-xl border border-brand-border min-w-[150px] shadow-sm">
+                            <p className="text-xs font-semibold text-brand-muted uppercase tracking-wider mb-1">{topic}</p>
+                            <p className="text-2xl font-bold">{count} <span className="text-sm font-normal text-brand-muted">done</span></p>
                         </div>
                     ))}
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <select 
                     value={topicFilter} 
                     onChange={(e) => setTopicFilter(e.target.value)}
-                    className="border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-primary-500 font-sans"
+                    className="bg-brand-surface border border-brand-border text-brand-text rounded-lg px-4 py-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary font-sans shadow-sm"
                 >
                     <option value="">All Topics</option>
                     <option value="DSA">DSA</option>
@@ -114,7 +112,7 @@ const ResourceTracker = () => {
                 <select 
                     value={difficultyFilter} 
                     onChange={(e) => setDifficultyFilter(e.target.value)}
-                    className="border border-slate-300 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-primary-500 font-sans"
+                    className="bg-brand-surface border border-brand-border text-brand-text rounded-lg px-4 py-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary font-sans shadow-sm"
                 >
                     <option value="">All Difficulties</option>
                     <option value="Easy">Easy</option>
@@ -125,8 +123,8 @@ const ResourceTracker = () => {
 
             {/* Resources List */}
             {resources.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-xl border border-slate-100">
-                    <p className="text-slate-500">No resources found matching those filters.</p>
+                <div className="text-center py-16 bg-brand-surface rounded-xl border border-brand-border shadow-sm">
+                    <p className="text-brand-muted text-lg">No resources found matching those filters.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -134,39 +132,39 @@ const ResourceTracker = () => {
                         const isCompleted = completedIds.includes(resource._id);
                         
                         return (
-                            <div key={resource._id} className={`bg-white rounded-xl shadow-sm border p-6 flex flex-col transition-all ${isCompleted ? 'border-emerald-200 bg-emerald-50/10' : 'border-slate-200 hover:shadow-md'}`}>
-                                <div className="flex justify-between items-start mb-3">
-                                    <span className="text-xs font-semibold bg-primary-50 text-primary-700 px-2.5 py-1 rounded-md">
+                            <div key={resource._id} className={`bg-brand-surface rounded-xl shadow border p-6 flex flex-col transition-all ${isCompleted ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-brand-border hover:border-brand-primary/50 hover:shadow-[0_0_15px_rgba(249,115,22,0.1)]'}`}>
+                                <div className="flex justify-between items-start mb-4">
+                                    <span className="text-xs font-bold bg-brand-primary/10 text-brand-primary border border-brand-primary/20 px-3 py-1 rounded-md tracking-wide">
                                         {resource.topic}
                                     </span>
                                     {isCompleted && (
-                                        <span className="text-xs font-bold text-emerald-600 bg-emerald-100 flex items-center px-2 py-1 rounded-full">
+                                        <span className="text-xs font-bold text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 flex items-center px-3 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm">
                                             ✓ Done
                                         </span>
                                     )}
                                 </div>
                                 
-                                <h3 className="text-xl font-bold text-slate-800 mb-2">{resource.title}</h3>
-                                <p className="text-sm text-slate-500 mb-4 line-clamp-2">{resource.description}</p>
+                                <h3 className="text-xl font-bold text-brand-text mb-3 leading-tight">{resource.title}</h3>
+                                <p className="text-sm text-brand-muted mb-5 line-clamp-3 leading-relaxed flex-grow">{resource.description}</p>
                                 
                                 <div className="flex gap-2 mb-6">
-                                    <span className="text-xs border text-slate-600 border-slate-200 px-2 py-1 rounded capitalize w-fit">{resource.type}</span>
-                                    <span className="text-xs border text-slate-600 border-slate-200 px-2 py-1 rounded capitalize w-fit">{resource.difficulty}</span>
+                                    <span className="text-xs bg-brand-bg border text-brand-muted border-brand-border px-2 py-1.5 rounded capitalize font-medium">{resource.type}</span>
+                                    <span className="text-xs bg-brand-bg border text-brand-muted border-brand-border px-2 py-1.5 rounded capitalize font-medium">{resource.difficulty}</span>
                                 </div>
 
-                                <div className="mt-auto flex justify-between items-center pt-4 border-t border-slate-100">
+                                <div className="mt-auto flex justify-between items-center pt-5 border-t border-brand-border/50">
                                     <a 
                                         href={resource.url} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="text-primary-600 text-sm font-medium hover:underline"
+                                        className="text-brand-primary text-sm font-bold hover:text-brand-primaryHover flex items-center gap-1 group"
                                     >
-                                        View Resource ↗
+                                        View Resource <span className="transform group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform">↗</span>
                                     </a>
                                     
                                     <button 
                                         onClick={() => handleToggleProgress(resource._id)}
-                                        className={`text-sm font-bold px-4 py-2 rounded-lg transition-colors ${isCompleted ? 'bg-slate-100 text-slate-600 hover:bg-slate-200/80' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'}`}
+                                        className={`text-sm font-bold px-5 py-2.5 rounded-lg transition-all shadow-sm ${isCompleted ? 'bg-brand-bg text-brand-muted border border-brand-border hover:text-brand-text' : 'bg-brand-primary text-white border border-brand-primaryHover hover:bg-brand-primaryHover hover:shadow-brand-primary/20 hover:shadow-lg'}`}
                                     >
                                         {isCompleted ? 'Undo' : 'Mark Done'}
                                     </button>
