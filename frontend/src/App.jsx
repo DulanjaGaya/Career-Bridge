@@ -8,6 +8,7 @@ import Footer from './components/Footer';
 import LobbyList from './pages/Lobby/LobbyList';
 import CreateLobby from './pages/Lobby/CreateLobby';
 import LobbyRoom from './pages/Lobby/LobbyRoom';
+import ResourceTracker from './pages/Resource/ResourceTracker';
 
 // Placeholder home page
 const Home = () => (
@@ -52,7 +53,11 @@ function App() {
                         </ProtectedRoute>
                     } />
                     
-                    {/* Tracker routes will be added here later */}
+                    <Route path="/resources" element={
+                        <ProtectedRoute>
+                            <ResourceTracker />
+                        </ProtectedRoute>
+                    } />
                 </Routes>
             </main>
             

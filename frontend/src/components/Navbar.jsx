@@ -19,9 +19,14 @@ const Navbar = () => {
                         InterviewPrep
                     </Link>
                     {user && (
-                        <Link to="/lobbies" className="text-slate-600 font-medium hover:text-primary-600 transition-colors">
-                            Mock Lobbies
-                        </Link>
+                        <>
+                            <Link to="/lobbies" className="text-slate-600 font-medium hover:text-primary-600 transition-colors">
+                                Mock Lobbies
+                            </Link>
+                            <Link to="/resources" className="text-slate-600 font-medium hover:text-primary-600 transition-colors">
+                                Resources
+                            </Link>
+                        </>
                     )}
                 </div>
                 <div className="flex gap-4 items-center">

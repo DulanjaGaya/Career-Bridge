@@ -7,6 +7,8 @@ import authRoutes from './routes/authRoutes.js';
 import lobbyRoutes from './routes/lobbyRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
 import answerRoutes from './routes/answerRoutes.js';
+import resourceRoutes from './routes/resourceRoutes.js';
+import progressRoutes from './routes/progressRoutes.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
 dotenv.config();
@@ -24,6 +26,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/lobbies', lobbyRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/answers', answerRoutes);
+app.use('/api/resources', resourceRoutes);
+app.use('/api/progress', progressRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');
