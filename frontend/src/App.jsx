@@ -5,6 +5,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
 import Footer from './components/Footer';
+import LobbyList from './pages/Lobby/LobbyList';
+import CreateLobby from './pages/Lobby/CreateLobby';
+import LobbyRoom from './pages/Lobby/LobbyRoom';
 
 // Placeholder home page
 const Home = () => (
@@ -31,7 +34,25 @@ function App() {
                         </ProtectedRoute>
                     } />
                     
-                    {/* Lobby and Tracker routes will be added here later */}
+                    <Route path="/lobbies" element={
+                        <ProtectedRoute>
+                            <LobbyList />
+                        </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/lobbies/create" element={
+                        <ProtectedRoute>
+                            <CreateLobby />
+                        </ProtectedRoute>
+                    } />
+
+                    <Route path="/lobbies/:id" element={
+                        <ProtectedRoute>
+                            <LobbyRoom />
+                        </ProtectedRoute>
+                    } />
+                    
+                    {/* Tracker routes will be added here later */}
                 </Routes>
             </main>
             

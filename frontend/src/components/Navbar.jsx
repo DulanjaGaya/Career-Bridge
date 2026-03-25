@@ -14,9 +14,16 @@ const Navbar = () => {
     return (
         <nav className="bg-white shadow-sm p-4 sticky top-0 z-50">
             <div className="container mx-auto flex justify-between items-center">
-                <Link to="/" className="text-xl font-bold text-primary-600">
-                    InterviewPrep
-                </Link>
+                <div className="flex items-center gap-6">
+                    <Link to="/" className="text-xl font-bold text-primary-600">
+                        InterviewPrep
+                    </Link>
+                    {user && (
+                        <Link to="/lobbies" className="text-slate-600 font-medium hover:text-primary-600 transition-colors">
+                            Mock Lobbies
+                        </Link>
+                    )}
+                </div>
                 <div className="flex gap-4 items-center">
                     {user ? (
                         <>
