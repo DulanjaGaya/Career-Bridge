@@ -20,7 +20,7 @@ const Navbar = () => {
                     </Link>
                     {user && (
                         <Link to="/lobbies" className="text-slate-600 font-medium hover:text-primary-600 transition-colors">
-                            Mock Lobbies
+                            Lobbies
                         </Link>
                     )}
                 </div>
