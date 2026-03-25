@@ -5,6 +5,10 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './components/ProtectedRoute';
 import Footer from './components/Footer';
+import LobbyList from './pages/Lobby/LobbyList';
+import CreateLobby from './pages/Lobby/CreateLobby';
+import LobbyRoom from './pages/Lobby/LobbyRoom';
+import ResourceTracker from './pages/Resource/ResourceTracker';
 
 // Placeholder home page
 const Home = () => (
@@ -16,9 +20,9 @@ const Home = () => (
 
 function App() {
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col">
+        <div className="min-h-screen bg-brand-bg flex flex-col">
             <Navbar />
-            <Toaster position="top-right" />
+            <Toaster position="top-right" toastOptions={{ style: { background: '#1E293B', color: '#F8FAFC' } }} />
             
             <main className="flex-grow">
                 <Routes>
@@ -31,7 +35,29 @@ function App() {
                         </ProtectedRoute>
                     } />
                     
-                    {/* Lobby and Tracker routes will be added here later */}
+                    <Route path="/lobbies" element={
+                        <ProtectedRoute>
+                            <LobbyList />
+                        </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/lobbies/create" element={
+                        <ProtectedRoute>
+                            <CreateLobby />
+                        </ProtectedRoute>
+                    } />
+
+                    <Route path="/lobbies/:id" element={
+                        <ProtectedRoute>
+                            <LobbyRoom />
+                        </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/resources" element={
+                        <ProtectedRoute>
+                            <ResourceTracker />
+                        </ProtectedRoute>
+                    } />
                 </Routes>
             </main>
             

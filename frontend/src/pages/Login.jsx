@@ -2,65 +2,96 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
+import { Mail, Lock, ArrowRight } from 'lucide-react';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const { login, user } = useContext(AuthContext);
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (user) {
-            navigate('/');
-        }
+        if (user) navigate('/');
     }, [user, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsLoading(true);
         try {
             await login(email, password);
-            toast.success('Logged in successfully!');
+            toast.success('Welcome back!', { style: { background: '#1E293B', color: '#10B981' } });
             navigate('/');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Login failed');
+            toast.error(error.response?.data?.message || 'Login failed', { style: { background: '#1E293B', color: '#F8FAFC' } });
+            setIsLoading(false);
         }
     };
 
     return (
-        <div className="min-h-[80vh] flex items-center justify-center">
-            <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-                <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Welcome Back</h2>
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="min-h-[85vh] flex items-center justify-center px-4">
+            <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="bg-brand-surface p-8 sm:p-10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.4)] border border-brand-border w-full max-w-md"
+            >
+                <div className="text-center mb-8">
+                    <h2 className="text-3xl font-bold text-brand-text tracking-tight mb-2">Welcome Back</h2>
+                    <p className="text-brand-muted">Sign in to continue your preparation.</p>
+                </div>
+                
+                <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                            placeholder="you@example.com"
-                        />
+                        <label className="block text-sm font-medium text-brand-text mb-1.5 ml-1">Email Address</label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-brand-muted">
+                                <Mail size={18} />
+                            </div>
+                            <input
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full bg-brand-bg border border-brand-border text-brand-text rounded-xl pl-10 pr-4 py-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all shadow-inner"
+                                placeholder="you@example.com"
+                            />
+                        </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                        <input
-                            type="password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                            placeholder="••••••••"
-                        />
+                        <label className="block text-sm font-medium text-brand-text mb-1.5 ml-1">Password</label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-brand-muted">
+                                <Lock size={18} />
+                            </div>
+                            <input
+                                type="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full bg-brand-bg border border-brand-border text-brand-text rounded-xl pl-10 pr-4 py-3 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all shadow-inner"
+                                placeholder="••••••••"
+                            />
+                        </div>
                     </div>
-                    <button type="submit" className="w-full bg-primary-600 text-white font-medium py-2 rounded-md hover:bg-primary-700 transition-colors mt-2">
-                        Sign In
+                    <button 
+                        type="submit" 
+                        disabled={isLoading}
+                        className="group w-full bg-gradient-to-r from-brand-primary to-brand-primaryHover text-white font-bold py-3.5 rounded-xl transition-all mt-4 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_25px_rgba(249,115,22,0.4)] disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                        {isLoading ? 'Signing In...' : 'Sign In'}
+                        {!isLoading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /> }
                     </button>
                 </form>
-                <p className="mt-4 text-center text-sm text-gray-600">
-                    Don't have an account? <Link to="/register" className="text-primary-600 hover:underline">Register here</Link>
+                
+                <p className="mt-8 text-center text-brand-muted">
+                    Don't have an account?{' '}
+                    <Link to="/register" className="text-brand-primary font-semibold hover:text-brand-primaryHover transition-colors">
+                        Register here
+                    </Link>
                 </p>
-            </div>
+            </motion.div>
         </div>
     );
 };
