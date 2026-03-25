@@ -28,73 +28,90 @@ const LobbyList = () => {
     const handleJoin = async (lobbyId) => {
         try {
             await api.post(`/lobbies/${lobbyId}/join`);
-            toast.success('Joined lobby successfully!');
             navigate(`/lobbies/${lobbyId}`);
         } catch (error) {
             if (error.response?.data?.message === 'You are already in this lobby') {
                 navigate(`/lobbies/${lobbyId}`);
             } else {
-                toast.error(error.response?.data?.message || 'Error joining lobby');
+                toast.error(error.response?.data?.message || 'Error joining lobby', { style: { background: '#1E293B', color: '#F8FAFC' } });
             }
         }
     };
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading active lobbies...</div>;
-
     return (
         <div className="container mx-auto p-6 max-w-5xl">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-800">Mock Interview Lobbies</h1>
-                    <p className="text-slate-500 mt-1">Join an active room to practice interview questions in real-time.</p>
+                    <h1 className="text-3xl font-bold text-brand-text mb-1 tracking-tight">Mock Interview Lobbies</h1>
+                    <p className="text-brand-muted">Join an active room to practice interview questions in real-time.</p>
                 </div>
                 <button
                     onClick={() => navigate('/lobbies/create')}
-                    className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-6 rounded-lg shadow-sm transition-colors"
+                    className="flex items-center gap-2 bg-gradient-to-r from-brand-primary to-brand-primaryHover text-white font-bold py-2.5 px-6 rounded-xl shadow-[0_0_15px_rgba(249,115,22,0.3)] hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] transition-all"
                 >
-                    + Create Room
+                    <Plus size={18} />
+                    <span>Create Room</span>
                 </button>
             </div>
 
-            {lobbies.length === 0 ? (
-                <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-12 text-center">
-                    <p className="text-slate-500 mb-4">No active interview rooms available right now.</p>
+            {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
+                </div>
+            ) : lobbies.length === 0 ? (
+                <motion.div 
+                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    className="bg-brand-surface rounded-2xl border border-brand-border p-16 text-center shadow-lg"
+                >
+                    <div className="mx-auto w-16 h-16 bg-brand-bg rounded-full flex items-center justify-center mb-4 border border-brand-border">
+                        <Hash className="text-brand-muted" size={28} />
+                    </div>
+                    <h3 className="text-xl font-bold text-brand-text mb-2">No Active Rooms</h3>
+                    <p className="text-brand-muted mb-6">There are currently no interview practice rooms available.</p>
                     <button
                         onClick={() => navigate('/lobbies/create')}
-                        className="text-primary-600 font-medium hover:underline"
+                        className="text-brand-primary font-medium hover:text-brand-primaryHover transition-colors"
                     >
-                        Be the first to create one!
+                        Be the first to create one! →
                     </button>
-                </div>
+                </motion.div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {lobbies.map((lobby) => (
-                        <div key={lobby._id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col hover:shadow-md transition-shadow">
+                    {lobbies.map((lobby, i) => (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.3, delay: i * 0.05 }}
+                            key={lobby._id} 
+                            className="group bg-brand-surface rounded-xl border border-brand-border p-6 flex flex-col hover:border-brand-primary/50 hover:shadow-[0_0_20px_rgba(249,115,22,0.1)] transition-all"
+                        >
                             <div className="flex justify-between items-start mb-4">
-                                <span className="text-xs font-semibold bg-primary-50 text-primary-700 px-3 py-1 rounded-full uppercase tracking-wider">
+                                <span className="text-xs font-bold bg-brand-primary/10 text-brand-primary border border-brand-primary/20 px-3 py-1 rounded-md uppercase tracking-wide">
                                     {lobby.topic}
                                 </span>
-                                <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
-                                    {lobby.members.length} / {lobby.maxMembers}
+                                <span className="flex items-center gap-1.5 text-xs font-bold text-brand-muted bg-brand-bg px-2.5 py-1 rounded-md border border-brand-border">
+                                    <Users size={12} /> {lobby.members.length} / {lobby.maxMembers}
                                 </span>
                             </div>
-                            <h3 className="text-xl font-bold text-slate-800 mb-2 truncate" title={lobby.title}>
+                            <h3 className="text-xl font-bold text-brand-text mb-2 truncate" title={lobby.title}>
                                 {lobby.title}
                             </h3>
-                            <p className="text-sm text-slate-500 mb-4 flex-grow line-clamp-2">
+                            <p className="text-sm text-brand-muted mb-6 flex-grow line-clamp-2 leading-relaxed">
                                 {lobby.description || 'No description provided.'}
                             </p>
-                            <div className="pt-4 border-t border-slate-100 flex justify-between items-center mt-auto">
-                                <span className="text-sm text-slate-500">Host: <span className="font-medium text-slate-700">{lobby.host.name}</span></span>
+                            <div className="pt-5 border-t border-brand-border/50 flex justify-between items-center mt-auto">
+                                <span className="text-xs text-brand-muted uppercase tracking-wide font-semibold">
+                                    Host: <span className="text-brand-text normal-case tracking-normal text-sm font-medium ml-1">{lobby.host.name}</span>
+                                </span>
                                 <button
                                     onClick={() => handleJoin(lobby._id)}
                                     disabled={lobby.members.length >= lobby.maxMembers && lobby.host._id !== user._id}
-                                    className="bg-primary-50 hover:bg-primary-100 text-primary-700 font-medium py-1.5 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="bg-brand-bg group-hover:bg-brand-primary text-brand-primary group-hover:text-white border border-brand-border group-hover:border-brand-primaryHover font-medium py-1.5 px-5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:group-hover:bg-brand-bg disabled:group-hover:text-brand-primary disabled:group-hover:border-brand-border shadow-sm"
                                 >
-                                    Join Room
+                                    Join
                                 </button>
                             </div>
-                        </div>
+                        </motion.div>
                     ))}
                 </div>
             )}
