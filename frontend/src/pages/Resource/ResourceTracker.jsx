@@ -112,23 +112,22 @@ const ResourceTracker = () => {
         }
     };
 
-    const handleDownloadReport = async (format = 'csv') => {
+    // Download PDF report
+    const handleDownloadReport = async () => {
         try {
-            const response = await api.get(`/resources/report/download?format=${format}`, {
-                responseType: format === 'json' ? 'json' : 'blob'
+            const response = await api.get('/resources/report/download', {
+                responseType: 'blob'
             });
-
-            const url = window.URL.createObjectURL(new Blob([format === 'json' ? JSON.stringify(response.data, null, 2) : response.data]));
+            const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `completion-report.${format === 'json' ? 'json' : 'csv'}`);
+            link.setAttribute('download', 'completion-report.pdf');
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
-            toast.success(`Report downloaded as ${format.toUpperCase()}!`);
+            toast.success('Report downloaded as PDF!');
         } catch (error) {
-            toast.error('Failed to download report');
+            toast.error('Failed to download PDF report');
         }
     };
 
@@ -218,10 +217,10 @@ const ResourceTracker = () => {
                         <Calendar size={18} /> Timeline
                     </button>
                     <button
-                        onClick={() => handleDownloadReport('csv')}
+                        onClick={handleDownloadReport}
                         className="flex items-center gap-2 bg-brand-surface hover:bg-brand-bg text-brand-text font-bold py-2 px-4 rounded-xl transition-all border border-brand-border"
                     >
-                        <Download size={18} /> Report
+                        <Download size={18} /> Report (PDF)
                     </button>
                     <button
                         onClick={() => setShowPdfUpload(!showPdfUpload)}
@@ -555,48 +554,59 @@ const ResourceTracker = () => {
                                         </div>
                                     )}
 
-                                    {/* Feedback Form */}
+                                    {/* Feedback Modal Popup */}
                                     {showFeedback && (
                                         <motion.div
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="bg-brand-bg/30 border border-brand-border rounded-lg p-4 mb-4"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+                                            onClick={() => setShowFeedback(false)}
                                         >
-                                            <div className="mb-3">
-                                                <p className="text-sm font-semibold text-brand-text mb-2">Rate this resource:</p>
-                                                <div className="flex gap-2">
-                                                    {[1, 2, 3, 4, 5].map(num => (
-                                                        <button
-                                                            key={num}
-                                                            onClick={() => setFeedback({...feedback, rating: num})}
-                                                            className={`transition-colors ${feedback.rating >= num ? 'text-yellow-400' : 'text-brand-border'}`}
-                                                        >
-                                                            <Star size={24} fill={feedback.rating >= num ? 'currentColor' : 'none'} />
-                                                        </button>
-                                                    ))}
+                                            <motion.div
+                                                initial={{ scale: 0.95 }}
+                                                animate={{ scale: 1 }}
+                                                exit={{ scale: 0.95 }}
+                                                className="bg-brand-bg border border-brand-border rounded-2xl p-6 w-full max-w-md shadow-xl relative"
+                                                onClick={e => e.stopPropagation()}
+                                            >
+                                                <h3 className="text-xl font-bold text-brand-text mb-4">Leave Feedback</h3>
+                                                <div className="mb-3">
+                                                    <p className="text-sm font-semibold text-brand-text mb-2">Rate this resource:</p>
+                                                    <div className="flex gap-2">
+                                                        {[1, 2, 3, 4, 5].map(num => (
+                                                            <button
+                                                                key={num}
+                                                                onClick={() => setFeedback({...feedback, rating: num})}
+                                                                className={`transition-colors ${feedback.rating >= num ? 'text-yellow-400' : 'text-brand-border'}`}
+                                                            >
+                                                                <Star size={24} fill={feedback.rating >= num ? 'currentColor' : 'none'} />
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <textarea
-                                                placeholder="Share your thoughts... (optional)"
-                                                value={feedback.comment}
-                                                onChange={e => setFeedback({...feedback, comment: e.target.value})}
-                                                className="w-full bg-brand-bg text-brand-text border border-brand-border rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-primary mb-3 resize-none"
-                                                rows="3"
-                                            />
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={handleAddFeedback}
-                                                    className="flex-1 bg-brand-primary hover:bg-brand-primaryHover text-white font-bold py-2 rounded-lg transition-all"
-                                                >
-                                                    Submit
-                                                </button>
-                                                <button
-                                                    onClick={() => setShowFeedback(false)}
-                                                    className="flex-1 bg-brand-bg border border-brand-border text-brand-text font-bold py-2 rounded-lg transition-all"
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </div>
+                                                <textarea
+                                                    placeholder="Share your thoughts... (optional)"
+                                                    value={feedback.comment}
+                                                    onChange={e => setFeedback({...feedback, comment: e.target.value})}
+                                                    className="w-full bg-brand-bg text-brand-text border border-brand-border rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-primary mb-3 resize-none"
+                                                    rows="3"
+                                                />
+                                                <div className="flex gap-2 mt-2">
+                                                    <button
+                                                        onClick={handleAddFeedback}
+                                                        className="flex-1 bg-brand-primary hover:bg-brand-primaryHover text-white font-bold py-2 rounded-lg transition-all"
+                                                    >
+                                                        Submit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setShowFeedback(false)}
+                                                        className="flex-1 bg-brand-bg border border-brand-border text-brand-text font-bold py-2 rounded-lg transition-all"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            </motion.div>
                                         </motion.div>
                                     )}
 
