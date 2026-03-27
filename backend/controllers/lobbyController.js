@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Lobby from '../models/Lobby.js';
 import Question from '../models/Question.js';
 import Answer from '../models/Answer.js';
@@ -39,55 +40,68 @@ const selectLobbyQuestionIds = async (topic, requestedCount) => {
     return [...topicQuestions, ...fallbackQuestions].map((question) => question._id);
 };
 
+/** Convert a value to a valid ObjectId, returns null if invalid */
+const toObjectId = (val) => {
+    try {
+        return new mongoose.Types.ObjectId(val.toString());
+    } catch {
+        return null;
+    }
+};
+
 const ensureLobbyQuestions = async (lobby) => {
     const targetQuestionCount = DEFAULT_QUESTION_COUNT;
-    const existingQuestionIds = Array.isArray(lobby.questions)
-        ? lobby.questions.map((qId) => qId.toString())
+
+    // Handle both populated (objects with _id) and unpopulated (raw ObjectIds) questions
+    const existingIdStrings = Array.isArray(lobby.questions)
+        ? lobby.questions.map((q) => (q && q._id ? q._id.toString() : q.toString()))
         : [];
 
-    let questionIds = existingQuestionIds;
+    let questionIdStrings = [...existingIdStrings];
 
-    if (questionIds.length < targetQuestionCount) {
-        const needed = targetQuestionCount - questionIds.length;
+    if (questionIdStrings.length < targetQuestionCount) {
+        const needed = targetQuestionCount - questionIdStrings.length;
+        const excludeIds = questionIdStrings.map((s) => toObjectId(s)).filter(Boolean);
         const extraQuestions = await Question.aggregate([
             {
                 $match: {
                     topic: lobby.topic,
-                    _id: { $nin: questionIds },
+                    _id: { $nin: excludeIds },
                 },
             },
             { $sample: { size: needed } },
             { $project: { _id: 1 } },
         ]);
 
-        const extraIds = extraQuestions.map((q) => q._id.toString());
-        questionIds = [...questionIds, ...extraIds];
+        questionIdStrings = [...questionIdStrings, ...extraQuestions.map((q) => q._id.toString())];
     }
 
-    if (questionIds.length < targetQuestionCount) {
-        const needed = targetQuestionCount - questionIds.length;
+    if (questionIdStrings.length < targetQuestionCount) {
+        const needed = targetQuestionCount - questionIdStrings.length;
+        const excludeIds = questionIdStrings.map((s) => toObjectId(s)).filter(Boolean);
         const fallbackQuestions = await Question.aggregate([
-            { $match: { _id: { $nin: questionIds } } },
+            { $match: { _id: { $nin: excludeIds } } },
             { $sample: { size: needed } },
             { $project: { _id: 1 } },
         ]);
-        questionIds = [...questionIds, ...fallbackQuestions.map((q) => q._id.toString())];
+        questionIdStrings = [...questionIdStrings, ...fallbackQuestions.map((q) => q._id.toString())];
     }
 
-    if (questionIds.length > targetQuestionCount) {
-        questionIds = questionIds.slice(0, targetQuestionCount);
+    if (questionIdStrings.length > targetQuestionCount) {
+        questionIdStrings = questionIdStrings.slice(0, targetQuestionCount);
     }
 
-    if (questionIds.length === 0) {
+    if (questionIdStrings.length === 0) {
         throw new Error('No questions available for this lobby');
     }
 
-    lobby.questions = questionIds;
+    // Convert back to ObjectIds before saving to satisfy Mongoose schema
+    lobby.questions = questionIdStrings.map((s) => toObjectId(s)).filter(Boolean);
     lobby.questionCount = targetQuestionCount;
     lobby.questionTimeLimit = DEFAULT_QUESTION_TIME_LIMIT;
     lobby.questionStartedAt = lobby.questionStartedAt || new Date();
 
-    if (lobby.currentQuestionIndex >= questionIds.length) {
+    if (lobby.currentQuestionIndex >= lobby.questions.length) {
         lobby.currentQuestionIndex = 0;
         lobby.questionStartedAt = new Date();
     }

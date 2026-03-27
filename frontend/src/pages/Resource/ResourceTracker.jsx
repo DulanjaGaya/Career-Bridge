@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../api/axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, ExternalLink, PlayCircle, BookOpen, RefreshCw, Layers, LayoutGrid, Download, Upload, Star, MessageSquare, Calendar } from 'lucide-react';
+import { CheckCircle, ExternalLink, PlayCircle, BookOpen, RefreshCw, Layers, LayoutGrid, Download, Plus, Star, MessageSquare, Calendar, AlertCircle } from 'lucide-react';
 
 const SkeletonItem = () => (
     <div className="bg-brand-surface rounded-xl border border-brand-border p-4 flex flex-col animate-pulse mb-4">
@@ -51,8 +51,9 @@ const ResourceTracker = () => {
     const [feedback, setFeedback] = useState({ rating: 0, comment: '' });
     const [showFeedback, setShowFeedback] = useState(false);
     const [resourceRating, setResourceRating] = useState(null);
-    const [showPdfUpload, setShowPdfUpload] = useState(false);
-    const [pdfForm, setPdfForm] = useState({ title: '', topic: '', url: '', description: '', difficulty: 'Medium' });
+    const [showAddResource, setShowAddResource] = useState(false);
+    const [resourceForm, setResourceForm] = useState({ title: '', topic: '', type: 'video', url: '', description: '', difficulty: 'Medium' });
+    const [formErrors, setFormErrors] = useState({});
 
     useEffect(() => {
         fetchData();
@@ -172,20 +173,65 @@ const ResourceTracker = () => {
         }
     };
 
-    const handleAddPdfResource = async () => {
-        try {
-            if (!pdfForm.title || !pdfForm.topic || !pdfForm.url) {
-                toast.error('Please fill in all required fields');
-                return;
-            }
+    // Frontend validation
+    const validateResourceForm = () => {
+        const errors = {};
+        
+        if (!resourceForm.title.trim()) {
+            errors.title = 'Title is required';
+        } else if (resourceForm.title.trim().length < 3) {
+            errors.title = 'Title must be at least 3 characters';
+        } else if (resourceForm.title.trim().length > 200) {
+            errors.title = 'Title must be under 200 characters';
+        }
 
-            await api.post('/resources/add-pdf', pdfForm);
-            toast.success('PDF resource added successfully!');
-            setPdfForm({ title: '', topic: '', url: '', description: '', difficulty: 'Medium' });
-            setShowPdfUpload(false);
+        if (!resourceForm.topic) {
+            errors.topic = 'Topic is required';
+        }
+
+        if (!resourceForm.url.trim()) {
+            errors.url = 'URL is required';
+        } else {
+            try {
+                const urlObj = new URL(resourceForm.url);
+                if (!['http:', 'https:'].includes(urlObj.protocol)) {
+                    errors.url = 'URL must start with http:// or https://';
+                }
+                // YouTube URL validation for video type
+                if (resourceForm.type === 'video') {
+                    const hostname = urlObj.hostname.toLowerCase();
+                    const isYouTube = hostname.includes('youtube.com') || hostname.includes('youtu.be');
+                    if (!isYouTube) {
+                        errors.url = 'Video resources must use a YouTube URL';
+                    }
+                }
+            } catch {
+                errors.url = 'Please enter a valid URL';
+            }
+        }
+
+        if (resourceForm.description && resourceForm.description.length > 1000) {
+            errors.description = 'Description must be under 1000 characters';
+        }
+
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const handleAddResource = async () => {
+        if (!validateResourceForm()) return;
+
+        try {
+            await api.post('/resources/add', resourceForm);
+            const typeLabel = resourceForm.type.charAt(0).toUpperCase() + resourceForm.type.slice(1);
+            toast.success(`${typeLabel} resource added successfully!`);
+            setResourceForm({ title: '', topic: '', type: 'video', url: '', description: '', difficulty: 'Medium' });
+            setFormErrors({});
+            setShowAddResource(false);
             fetchData();
         } catch (error) {
-            toast.error('Failed to add PDF resource');
+            const msg = error.response?.data?.message || 'Failed to add resource';
+            toast.error(msg);
         }
     };
 
@@ -223,10 +269,10 @@ const ResourceTracker = () => {
                         <Download size={18} /> Report (PDF)
                     </button>
                     <button
-                        onClick={() => setShowPdfUpload(!showPdfUpload)}
+                        onClick={() => setShowAddResource(!showAddResource)}
                         className="flex items-center gap-2 bg-brand-primary hover:bg-brand-primaryHover text-white font-bold py-2 px-4 rounded-xl transition-all shadow-sm"
                     >
-                        <Upload size={18} /> Add PDF
+                        <Plus size={18} /> Add Resource
                     </button>
                 </div>
                 
@@ -248,67 +294,108 @@ const ResourceTracker = () => {
                 )}
             </div>
 
-            {/* PDF Upload Form */}
-            {showPdfUpload && (
+            {/* Add Resource Form */}
+            {showAddResource && (
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-brand-surface border border-brand-border rounded-2xl p-6 mb-6 shadow-lg"
                 >
-                    <h3 className="text-xl font-bold text-brand-text mb-4">Add PDF Resource</h3>
+                    <h3 className="text-xl font-bold text-brand-text mb-4">Add New Resource</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input
-                            type="text"
-                            placeholder="Resource Title *"
-                            value={pdfForm.title}
-                            onChange={e => setPdfForm({...pdfForm, title: e.target.value})}
-                            className="bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2 outline-none focus:border-brand-primary"
-                        />
+                        {/* Title */}
+                        <div className="flex flex-col gap-1">
+                            <input
+                                type="text"
+                                placeholder="Resource Title *"
+                                value={resourceForm.title}
+                                onChange={e => { setResourceForm({...resourceForm, title: e.target.value}); setFormErrors({...formErrors, title: ''}); }}
+                                className={`bg-brand-bg border ${formErrors.title ? 'border-red-500' : 'border-brand-border'} text-brand-text rounded-lg px-4 py-2.5 outline-none focus:border-brand-primary transition-colors`}
+                            />
+                            {formErrors.title && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle size={12} />{formErrors.title}</span>}
+                        </div>
+
+                        {/* Type Selector */}
                         <select
-                            value={pdfForm.topic}
-                            onChange={e => setPdfForm({...pdfForm, topic: e.target.value})}
-                            className="bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2 outline-none focus:border-brand-primary"
+                            value={resourceForm.type}
+                            onChange={e => { setResourceForm({...resourceForm, type: e.target.value, url: ''}); setFormErrors({...formErrors, url: ''}); }}
+                            className="bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2.5 outline-none focus:border-brand-primary transition-colors"
                         >
-                            <option value="">Select Topic *</option>
-                            <option value="DSA">DSA</option>
-                            <option value="OOP">OOP</option>
-                            <option value="System Design">System Design</option>
-                            <option value="DBMS">DBMS</option>
-                            <option value="Web Dev">Web Dev</option>
+                            <option value="video">🎬 Video (YouTube)</option>
+                            <option value="pdf">📄 PDF / Document</option>
+                            <option value="article">📝 Article</option>
                         </select>
-                        <input
-                            type="url"
-                            placeholder="Drive/PDF Link *"
-                            value={pdfForm.url}
-                            onChange={e => setPdfForm({...pdfForm, url: e.target.value})}
-                            className="bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2 outline-none focus:border-brand-primary md:col-span-2"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Description"
-                            value={pdfForm.description}
-                            onChange={e => setPdfForm({...pdfForm, description: e.target.value})}
-                            className="bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2 outline-none focus:border-brand-primary md:col-span-2"
-                        />
+
+                        {/* Topic */}
+                        <div className="flex flex-col gap-1">
+                            <select
+                                value={resourceForm.topic}
+                                onChange={e => { setResourceForm({...resourceForm, topic: e.target.value}); setFormErrors({...formErrors, topic: ''}); }}
+                                className={`bg-brand-bg border ${formErrors.topic ? 'border-red-500' : 'border-brand-border'} text-brand-text rounded-lg px-4 py-2.5 outline-none focus:border-brand-primary transition-colors`}
+                            >
+                                <option value="">Select Topic *</option>
+                                <option value="DSA">DSA</option>
+                                <option value="OOP">OOP</option>
+                                <option value="System Design">System Design</option>
+                                <option value="DBMS">DBMS</option>
+                                <option value="Web Dev">Web Dev</option>
+                                <option value="HR">HR</option>
+                            </select>
+                            {formErrors.topic && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle size={12} />{formErrors.topic}</span>}
+                        </div>
+
+                        {/* Difficulty */}
                         <select
-                            value={pdfForm.difficulty}
-                            onChange={e => setPdfForm({...pdfForm, difficulty: e.target.value})}
-                            className="bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2 outline-none focus:border-brand-primary"
+                            value={resourceForm.difficulty}
+                            onChange={e => setResourceForm({...resourceForm, difficulty: e.target.value})}
+                            className="bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2.5 outline-none focus:border-brand-primary transition-colors"
                         >
                             <option value="Easy">Easy</option>
                             <option value="Medium">Medium</option>
                             <option value="Hard">Hard</option>
                         </select>
+
+                        {/* URL */}
+                        <div className="flex flex-col gap-1 md:col-span-2">
+                            <input
+                                type="url"
+                                placeholder={resourceForm.type === 'video' ? 'YouTube URL * (e.g. https://youtu.be/abc123)' : resourceForm.type === 'pdf' ? 'PDF / Drive Link *' : 'Article URL *'}
+                                value={resourceForm.url}
+                                onChange={e => { setResourceForm({...resourceForm, url: e.target.value}); setFormErrors({...formErrors, url: ''}); }}
+                                className={`bg-brand-bg border ${formErrors.url ? 'border-red-500' : 'border-brand-border'} text-brand-text rounded-lg px-4 py-2.5 outline-none focus:border-brand-primary transition-colors`}
+                            />
+                            {formErrors.url && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle size={12} />{formErrors.url}</span>}
+                            {resourceForm.type === 'video' && !formErrors.url && (
+                                <span className="text-brand-muted text-xs">Supports youtube.com and youtu.be links</span>
+                            )}
+                        </div>
+
+                        {/* Description */}
+                        <div className="flex flex-col gap-1 md:col-span-2">
+                            <textarea
+                                placeholder="Description (optional)"
+                                value={resourceForm.description}
+                                onChange={e => { setResourceForm({...resourceForm, description: e.target.value}); setFormErrors({...formErrors, description: ''}); }}
+                                rows="2"
+                                className={`bg-brand-bg border ${formErrors.description ? 'border-red-500' : 'border-brand-border'} text-brand-text rounded-lg px-4 py-2.5 outline-none focus:border-brand-primary transition-colors resize-none`}
+                            />
+                            <div className="flex justify-between">
+                                {formErrors.description && <span className="text-red-400 text-xs flex items-center gap-1"><AlertCircle size={12} />{formErrors.description}</span>}
+                                <span className={`text-xs ml-auto ${resourceForm.description.length > 900 ? 'text-red-400' : 'text-brand-muted'}`}>{resourceForm.description.length}/1000</span>
+                            </div>
+                        </div>
+
+                        {/* Buttons */}
                         <div className="flex gap-3 md:col-span-2">
                             <button
-                                onClick={handleAddPdfResource}
-                                className="flex-1 bg-brand-primary hover:bg-brand-primaryHover text-white font-bold py-2 rounded-lg transition-all"
+                                onClick={handleAddResource}
+                                className="flex-1 flex items-center justify-center gap-2 bg-brand-primary hover:bg-brand-primaryHover text-white font-bold py-2.5 rounded-lg transition-all"
                             >
-                                Add Resource
+                                <Plus size={18} /> Add {resourceForm.type === 'video' ? 'Video' : resourceForm.type === 'pdf' ? 'PDF' : 'Article'}
                             </button>
                             <button
-                                onClick={() => setShowPdfUpload(false)}
-                                className="flex-1 bg-brand-bg border border-brand-border text-brand-text font-bold py-2 rounded-lg transition-all"
+                                onClick={() => { setShowAddResource(false); setFormErrors({}); }}
+                                className="flex-1 bg-brand-bg border border-brand-border text-brand-text font-bold py-2.5 rounded-lg transition-all hover:border-brand-primary/40"
                             >
                                 Cancel
                             </button>

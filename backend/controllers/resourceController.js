@@ -38,31 +38,127 @@ export const getResourceById = async (req, res, next) => {
     }
 };
 
-// @desc    Add PDF resource link
-// @route   POST /api/resources/add-pdf
-// @access  Private
-export const addPdfResource = async (req, res, next) => {
-    try {
-        const { title, topic, url, description, difficulty } = req.body;
+// Allowed values for validation
+const ALLOWED_TYPES = ['video', 'pdf', 'article'];
+const ALLOWED_TOPICS = ['DSA', 'OOP', 'System Design', 'DBMS', 'Web Dev', 'HR'];
+const ALLOWED_DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
 
-        if (!title || !topic || !url) {
+// URL validation helpers
+const isValidUrl = (str) => {
+    try {
+        const url = new URL(str);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+        return false;
+    }
+};
+
+const isValidYouTubeUrl = (url) => {
+    try {
+        const urlObj = new URL(url);
+        const hostname = urlObj.hostname.toLowerCase();
+        if (hostname.includes('youtube.com')) {
+            return !!urlObj.searchParams.get('v');
+        }
+        if (hostname.includes('youtu.be')) {
+            return urlObj.pathname.length > 1;
+        }
+        return false;
+    } catch {
+        return false;
+    }
+};
+
+// @desc    Add a new resource (video, pdf, or article)
+// @route   POST /api/resources/add
+// @access  Private
+export const addResource = async (req, res, next) => {
+    try {
+        const { title, topic, type, url, description, difficulty } = req.body;
+
+        // --- Validation ---
+        if (!title || !title.trim()) {
             res.status(400);
-            throw new Error('Title, topic, and URL are required');
+            throw new Error('Title is required');
+        }
+
+        if (title.trim().length < 3 || title.trim().length > 200) {
+            res.status(400);
+            throw new Error('Title must be between 3 and 200 characters');
+        }
+
+        if (!topic) {
+            res.status(400);
+            throw new Error('Topic is required');
+        }
+
+        if (!ALLOWED_TOPICS.includes(topic)) {
+            res.status(400);
+            throw new Error(`Topic must be one of: ${ALLOWED_TOPICS.join(', ')}`);
+        }
+
+        if (!type) {
+            res.status(400);
+            throw new Error('Type is required');
+        }
+
+        if (!ALLOWED_TYPES.includes(type)) {
+            res.status(400);
+            throw new Error(`Type must be one of: ${ALLOWED_TYPES.join(', ')}`);
+        }
+
+        if (!url || !url.trim()) {
+            res.status(400);
+            throw new Error('URL is required');
+        }
+
+        if (!isValidUrl(url)) {
+            res.status(400);
+            throw new Error('Please provide a valid URL (must start with http:// or https://)');
+        }
+
+        // For video type, validate it's a YouTube URL
+        if (type === 'video' && !isValidYouTubeUrl(url)) {
+            res.status(400);
+            throw new Error('Video resources must have a valid YouTube URL (youtube.com or youtu.be)');
+        }
+
+        const validDifficulty = ALLOWED_DIFFICULTIES.includes(difficulty) ? difficulty : 'Medium';
+
+        if (description && description.length > 1000) {
+            res.status(400);
+            throw new Error('Description must be under 1000 characters');
+        }
+
+        // Check for duplicate URL
+        const existingResource = await Resource.findOne({ url: url.trim() });
+        if (existingResource) {
+            res.status(400);
+            throw new Error('A resource with this URL already exists');
         }
 
         const resource = await Resource.create({
-            title,
+            title: title.trim(),
             topic,
-            type: 'pdf',
-            url,
-            description,
-            difficulty: difficulty || 'Medium',
+            type,
+            url: url.trim(),
+            description: description?.trim() || '',
+            difficulty: validDifficulty,
         });
 
-        res.status(201).json({ message: 'PDF resource added successfully', resource });
+        res.status(201).json({ message: `${type.charAt(0).toUpperCase() + type.slice(1)} resource added successfully`, resource });
     } catch (error) {
         next(error);
     }
+};
+
+// @desc    Add PDF resource link (kept for backwards compatibility)
+// @route   POST /api/resources/add-pdf
+// @access  Private
+export const addPdfResource = async (req, res, next) => {
+    // Delegate to generic addResource with type forced to pdf
+    req.body.type = 'pdf';
+    return addResource(req, res, next);
 };
 
 // @desc    Get user's completion timeline

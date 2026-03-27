@@ -1,10 +1,11 @@
 import express from 'express';
-import { getResources, getResourceById, addPdfResource, getTimeline, downloadReport } from '../controllers/resourceController.js';
+import { getResources, getResourceById, addPdfResource, addResource, getTimeline, downloadReport } from '../controllers/resourceController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 // Specific routes first
+router.post('/add', protect, addResource);
 router.post('/add-pdf', protect, addPdfResource);
 router.get('/timeline', protect, getTimeline);
 router.get('/report/download', protect, downloadReport);
