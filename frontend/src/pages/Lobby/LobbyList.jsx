@@ -3,24 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../api/axios';
 import { AuthContext } from '../../context/AuthContext';
-import { motion } from 'framer-motion';
-import { Users, Plus, Hash } from 'lucide-react';
-
-const SkeletonCard = () => (
-    <div className="bg-brand-surface rounded-xl border border-brand-border p-6 flex flex-col animate-pulse">
-        <div className="flex justify-between items-start mb-4">
-            <div className="h-6 w-16 bg-brand-border rounded-full"></div>
-            <div className="h-6 w-12 bg-brand-bg rounded-md border border-brand-border"></div>
-        </div>
-        <div className="h-6 w-3/4 bg-brand-border rounded mb-3"></div>
-        <div className="h-4 w-full bg-brand-bg rounded mb-2 flex-grow"></div>
-        <div className="h-4 w-5/6 bg-brand-bg rounded mb-6 flex-grow"></div>
-        <div className="pt-4 border-t border-brand-border flex justify-between items-center mt-auto">
-            <div className="h-4 w-24 bg-brand-bg rounded"></div>
-            <div className="h-8 w-24 bg-brand-border rounded-md"></div>
-        </div>
-    </div>
-);
 
 const LobbyList = () => {
     const [lobbies, setLobbies] = useState([]);

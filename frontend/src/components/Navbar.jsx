@@ -19,14 +19,9 @@ const Navbar = () => {
                         Career Bridge
                     </Link>
                     {user && (
-                        <>
-                            <Link to="/lobbies" className="text-brand-muted font-medium hover:text-brand-primary transition-colors">
-                                Mock Lobbies
-                            </Link>
-                            <Link to="/resources" className="text-brand-muted font-medium hover:text-brand-primary transition-colors">
-                                Resources
-                            </Link>
-                        </>
+                        <Link to="/lobbies" className="text-slate-600 font-medium hover:text-primary-600 transition-colors">
+                            Lobbies
+                        </Link>
                     )}
                 </div>
                 <div className="flex gap-4 items-center">
