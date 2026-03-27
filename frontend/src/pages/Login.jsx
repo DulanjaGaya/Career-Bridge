@@ -13,7 +13,7 @@ const Login = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (user) navigate('/');
+        if (user) navigate('/lobbies');
     }, [user, navigate]);
 
     const handleSubmit = async (e) => {
@@ -22,7 +22,7 @@ const Login = () => {
         try {
             await login(email, password);
             toast.success('Welcome back!', { style: { background: '#1E293B', color: '#10B981' } });
-            navigate('/');
+            navigate('/lobbies');
         } catch (error) {
             toast.error(error.response?.data?.message || 'Login failed', { style: { background: '#1E293B', color: '#F8FAFC' } });
             setIsLoading(false);

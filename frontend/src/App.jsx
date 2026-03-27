@@ -9,14 +9,10 @@ import LobbyList from './pages/Lobby/LobbyList';
 import CreateLobby from './pages/Lobby/CreateLobby';
 import LobbyRoom from './pages/Lobby/LobbyRoom';
 import ResourceTracker from './pages/Resource/ResourceTracker';
-
-// Placeholder home page
-const Home = () => (
-    <div className="container mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-        <p>Welcome to the Interview Preparation Platform. Please use the navigation to explore features.</p>
-    </div>
-);
+import Home from './pages/Home';
+import About from './pages/About';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 
 function App() {
     return (
@@ -26,15 +22,15 @@ function App() {
             
             <main className="flex-grow">
                 <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<Home />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/terms" element={<TermsOfService />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     
-                    <Route path="/" element={
-                        <ProtectedRoute>
-                            <Home />
-                        </ProtectedRoute>
-                    } />
-                    
+                    {/* Protected Routes */}
                     <Route path="/lobbies" element={
                         <ProtectedRoute>
                             <LobbyList />
