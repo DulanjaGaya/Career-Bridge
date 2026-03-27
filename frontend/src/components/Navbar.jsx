@@ -10,6 +10,7 @@ const Navbar = () => {
     const location = useLocation();
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -25,8 +26,17 @@ const Navbar = () => {
     }, [location.pathname]);
 
     const handleLogout = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const confirmLogout = () => {
+        setShowLogoutConfirm(false);
         logout();
         navigate('/');
+    };
+
+    const cancelLogout = () => {
+        setShowLogoutConfirm(false);
     };
 
     const navLinks = user 
@@ -167,6 +177,30 @@ const Navbar = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {showLogoutConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+                    <div className="w-full max-w-sm rounded-2xl bg-brand-surface border border-brand-border p-6 shadow-xl">
+                        <h3 className="text-lg font-semibold text-white mb-2">Confirm Logout</h3>
+                        <p className="text-sm text-brand-muted mb-5">Are you sure you want to log out? You will be returned to the homepage.</p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={cancelLogout}
+                                className="px-4 py-2 rounded-lg border border-brand-border text-brand-muted hover:bg-brand-bg transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmLogout}
+                                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </nav>
     );
 };

@@ -52,6 +52,10 @@ const ResourceTracker = () => {
     const [showFeedback, setShowFeedback] = useState(false);
     const [resourceRating, setResourceRating] = useState(null);
     const [showAddResource, setShowAddResource] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editingResourceId, setEditingResourceId] = useState(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleteTargetResource, setDeleteTargetResource] = useState(null);
     const [resourceForm, setResourceForm] = useState({ title: '', topic: '', type: 'video', url: '', description: '', difficulty: 'Medium' });
     const [formErrors, setFormErrors] = useState({});
 
@@ -235,6 +239,70 @@ const ResourceTracker = () => {
         }
     };
 
+    const resetForm = () => {
+        setResourceForm({ title: '', topic: '', type: 'video', url: '', description: '', difficulty: 'Medium' });
+        setFormErrors({});
+        setIsEditing(false);
+        setEditingResourceId(null);
+    };
+
+    const handleEditResource = (resource) => {
+        setResourceForm({
+            title: resource.title || '',
+            topic: resource.topic || '',
+            type: resource.type || 'video',
+            url: resource.url || '',
+            description: resource.description || '',
+            difficulty: resource.difficulty || 'Medium',
+        });
+        setShowAddResource(true);
+        setIsEditing(true);
+        setEditingResourceId(resource._id);
+    };
+
+    const handleUpdateResource = async () => {
+        if (!validateResourceForm() || !editingResourceId) return;
+
+        try {
+            await api.put(`/resources/${editingResourceId}`, resourceForm);
+            toast.success('Resource updated successfully!');
+            fetchData();
+            resetForm();
+            setShowAddResource(false);
+        } catch (error) {
+            const msg = error.response?.data?.message || 'Failed to update resource';
+            toast.error(msg);
+        }
+    };
+
+    const openDeleteConfirmation = (resource) => {
+        setDeleteTargetResource(resource);
+        setShowDeleteConfirm(true);
+    };
+
+    const cancelDelete = () => {
+        setDeleteTargetResource(null);
+        setShowDeleteConfirm(false);
+    };
+
+    const handleDeleteResource = async () => {
+        if (!deleteTargetResource) return;
+
+        try {
+            await api.delete(`/resources/${deleteTargetResource._id}`);
+            toast.success('Resource deleted successfully!');
+            fetchData();
+            if (selectedResource && selectedResource._id === deleteTargetResource._id) {
+                setSelectedResource(null);
+            }
+        } catch (error) {
+            const msg = error.response?.data?.message || 'Failed to delete resource';
+            toast.error(msg);
+        } finally {
+            cancelDelete();
+        }
+    };
+
     const filteredResources = resources.filter(resource =>
         resource.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -301,7 +369,9 @@ const ResourceTracker = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="bg-brand-surface border border-brand-border rounded-2xl p-6 mb-6 shadow-lg"
                 >
-                    <h3 className="text-xl font-bold text-brand-text mb-4">Add New Resource</h3>
+                    <h3 className="text-xl font-bold text-brand-text mb-4">
+                        {isEditing ? 'Edit Resource' : 'Add New Resource'}
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Title */}
                         <div className="flex flex-col gap-1">
@@ -388,13 +458,13 @@ const ResourceTracker = () => {
                         {/* Buttons */}
                         <div className="flex gap-3 md:col-span-2">
                             <button
-                                onClick={handleAddResource}
+                                onClick={isEditing ? handleUpdateResource : handleAddResource}
                                 className="flex-1 flex items-center justify-center gap-2 bg-brand-primary hover:bg-brand-primaryHover text-white font-bold py-2.5 rounded-lg transition-all"
                             >
-                                <Plus size={18} /> Add {resourceForm.type === 'video' ? 'Video' : resourceForm.type === 'pdf' ? 'PDF' : 'Article'}
+                                <Plus size={18} /> {isEditing ? 'Save Changes' : `Add ${resourceForm.type === 'video' ? 'Video' : resourceForm.type === 'pdf' ? 'PDF' : 'Article'}`}
                             </button>
                             <button
-                                onClick={() => { setShowAddResource(false); setFormErrors({}); }}
+                                onClick={() => { setShowAddResource(false); resetForm(); }}
                                 className="flex-1 bg-brand-bg border border-brand-border text-brand-text font-bold py-2.5 rounded-lg transition-all hover:border-brand-primary/40"
                             >
                                 Cancel
@@ -447,6 +517,29 @@ const ResourceTracker = () => {
                         </button>
                     </motion.div>
                 </motion.div>
+            )}
+
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+                    <div className="w-full max-w-md rounded-2xl bg-brand-surface border border-brand-border p-6 shadow-xl">
+                        <h3 className="text-xl font-bold text-white mb-2">Delete Resource</h3>
+                        <p className="text-sm text-brand-muted mb-4">Are you sure you want to delete "{deleteTargetResource?.title}"? This action cannot be undone.</p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={cancelDelete}
+                                className="px-4 py-2 rounded-lg border border-brand-border text-brand-muted hover:bg-brand-bg transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteResource}
+                                className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Main Split Layout */}
@@ -600,10 +693,10 @@ const ResourceTracker = () => {
                                             </h2>
                                         </div>
                                         
-                                        <div className="shrink-0 flex flex-col gap-2 w-full md:w-auto">
+                                        <div className="shrink-0 flex flex-wrap gap-2 w-full md:w-auto">
                                             <button 
                                                 onClick={() => handleToggleProgress(selectedResource._id)}
-                                                className={`flex justify-center items-center gap-2 font-bold px-6 py-3 rounded-xl transition-all shadow-sm border ${
+                                                className={`flex justify-center items-center gap-2 font-bold px-4 py-2 rounded-xl transition-all shadow-sm border ${
                                                     completedIds.includes(selectedResource._id) 
                                                     ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20' 
                                                     : 'bg-brand-bg text-brand-text border-brand-border hover:border-brand-primary hover:text-brand-primary'
@@ -621,23 +714,52 @@ const ResourceTracker = () => {
                                             >
                                                 <MessageSquare size={18} /> Feedback
                                             </button>
+                                            <button
+                                                onClick={() => handleEditResource(selectedResource)}
+                                                className="flex justify-center items-center gap-2 font-bold px-6 py-3 rounded-xl transition-all shadow-sm border bg-brand-surface text-brand-text border-brand-border hover:border-brand-primary"
+                                            >
+                                                <RefreshCw size={18} /> Edit
+                                            </button>
+                                            <button
+                                                onClick={() => openDeleteConfirmation(selectedResource)}
+                                                className="flex justify-center items-center gap-2 font-bold px-6 py-3 rounded-xl transition-all shadow-sm border bg-red-500/10 text-red-500 border-red-500/30 hover:bg-red-500/20"
+                                            >
+                                                <AlertCircle size={18} /> Delete
+                                            </button>
                                         </div>
                                     </div>
 
                                     {/* Rating Display */}
                                     {resourceRating && resourceRating.averageRating > 0 && (
-                                        <div className="flex items-center gap-2 mb-4 p-3 bg-brand-bg/30 rounded-lg">
-                                            <div className="flex gap-1">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        size={16}
-                                                        className={i < Math.round(resourceRating.averageRating) ? 'fill-yellow-400 text-yellow-400' : 'text-brand-border'}
-                                                    />
-                                                ))}
+                                        <div className="mb-4 p-3 bg-brand-bg/30 rounded-lg">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="flex gap-1">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <Star
+                                                            key={i}
+                                                            size={16}
+                                                            className={i < Math.round(resourceRating.averageRating) ? 'fill-yellow-400 text-yellow-400' : 'text-brand-border'}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                <span className="text-sm text-brand-text font-semibold">{resourceRating.averageRating}/5</span>
+                                                <span className="text-xs text-brand-muted">({resourceRating.totalReviews} reviews)</span>
                                             </div>
-                                            <span className="text-sm text-brand-text font-semibold">{resourceRating.averageRating}/5</span>
-                                            <span className="text-xs text-brand-muted">({resourceRating.totalReviews} reviews)</span>
+                                            {resourceRating.feedbacks && resourceRating.feedbacks.length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {resourceRating.feedbacks.map((fb) => (
+                                                        <div key={fb._id} className="border border-brand-border/60 rounded-lg p-3 bg-brand-surface">
+                                                            <div className="flex items-center justify-between gap-2 mb-1">
+                                                                <strong className="text-xs text-brand-text">{fb.userId?.name || 'Anonymous'}</strong>
+                                                                <span className="text-[11px] text-brand-muted">{fb.rating}/5</span>
+                                                            </div>
+                                                            <p className="text-sm text-brand-muted">{fb.comment || 'No review comment provided.'}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="text-xs text-brand-muted">No written reviews yet.</p>
+                                            )}
                                         </div>
                                     )}
 

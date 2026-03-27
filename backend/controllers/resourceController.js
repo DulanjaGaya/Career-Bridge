@@ -161,6 +161,98 @@ export const addPdfResource = async (req, res, next) => {
     return addResource(req, res, next);
 };
 
+// @desc    Update an existing resource
+// @route   PUT /api/resources/:id
+// @access  Private
+export const updateResource = async (req, res, next) => {
+    try {
+        const { title, topic, type, url, description, difficulty } = req.body;
+        const resource = await Resource.findById(req.params.id);
+
+        if (!resource) {
+            res.status(404);
+            throw new Error('Resource not found');
+        }
+
+        if (!title || !title.trim()) {
+            res.status(400);
+            throw new Error('Title is required');
+        }
+
+        if (title.trim().length < 3 || title.trim().length > 200) {
+            res.status(400);
+            throw new Error('Title must be between 3 and 200 characters');
+        }
+
+        if (!topic || !ALLOWED_TOPICS.includes(topic)) {
+            res.status(400);
+            throw new Error(`Topic must be one of: ${ALLOWED_TOPICS.join(', ')}`);
+        }
+
+        if (!type || !ALLOWED_TYPES.includes(type)) {
+            res.status(400);
+            throw new Error(`Type must be one of: ${ALLOWED_TYPES.join(', ')}`);
+        }
+
+        if (!url || !url.trim() || !isValidUrl(url)) {
+            res.status(400);
+            throw new Error('Please provide a valid URL (must start with http:// or https://)');
+        }
+
+        if (type === 'video' && !isValidYouTubeUrl(url)) {
+            res.status(400);
+            throw new Error('Video resources must have a valid YouTube URL (youtube.com or youtu.be)');
+        }
+
+        const existingResource = await Resource.findOne({ url: url.trim() });
+        if (existingResource && existingResource._id.toString() !== resource._id.toString()) {
+            res.status(400);
+            throw new Error('A resource with this URL already exists');
+        }
+
+        const validDifficulty = ALLOWED_DIFFICULTIES.includes(difficulty) ? difficulty : 'Medium';
+
+        if (description && description.length > 1000) {
+            res.status(400);
+            throw new Error('Description must be under 1000 characters');
+        }
+
+        resource.title = title.trim();
+        resource.topic = topic;
+        resource.type = type;
+        resource.url = url.trim();
+        resource.description = description?.trim() || '';
+        resource.difficulty = validDifficulty;
+
+        const updatedResource = await resource.save();
+
+        res.json({ message: 'Resource updated successfully', resource: updatedResource });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Delete an existing resource
+// @route   DELETE /api/resources/:id
+// @access  Private
+export const deleteResource = async (req, res, next) => {
+    try {
+        const resource = await Resource.findById(req.params.id);
+
+        if (!resource) {
+            res.status(404);
+            throw new Error('Resource not found');
+        }
+
+        await Progress.deleteMany({ resourceId: resource._id });
+        await resource.deleteOne();
+
+        res.json({ message: 'Resource deleted successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Get user's completion timeline
 // @route   GET /api/resources/timeline
 // @access  Private
