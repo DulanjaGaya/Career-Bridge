@@ -1,8 +1,28 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef, useEffectEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../api/axios';
 import { AuthContext } from '../../context/AuthContext';
+import Confetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
+import { Trophy, Timer, Info, Users, CheckCircle, ChevronRight, XCircle, Crown } from 'lucide-react';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
+
+const RESULT_DISPLAY_MS = 3000;
+
+const getRemainingTime = (startedAt, questionTimeLimit) => {
+    if (!questionTimeLimit) {
+        return 0;
+    }
+
+    const startedAtMs = new Date(startedAt).getTime();
+    if (Number.isNaN(startedAtMs)) {
+        return questionTimeLimit;
+    }
+
+    const elapsedSeconds = Math.floor((Date.now() - startedAtMs) / 1000);
+    return Math.max(questionTimeLimit - elapsedSeconds, 0);
+};
 
 const LobbyRoom = () => {
     const { id } = useParams();
@@ -16,140 +36,295 @@ const LobbyRoom = () => {
     const [timeLeft, setTimeLeft] = useState(0);
     const [selectedOption, setSelectedOption] = useState('');
     const [hasSubmitted, setHasSubmitted] = useState(false);
-    const [results, setResults] = useState([]);
     const [scoreboard, setScoreboard] = useState([]);
     const [showResults, setShowResults] = useState(false);
     const [quizEnded, setQuizEnded] = useState(false);
+    const [userAttempt, setUserAttempt] = useState({
+        attemptNo: 1,
+        answeredCount: 0,
+        totalQuestions: 0,
+        completed: false,
+        answeredQuestionIds: [],
+        answerMap: {},
+        stoppedAtQuestionNumber: 1,
+    });
 
-    // Initial Fetch & Polling
+    const activeQuestionRef = useRef({ index: -1, startedAt: '' });
+    const handledQuestionRef = useRef('');
+    const autoAdvanceTimeoutRef = useRef(null);
+
+    const isHost = lobby?.host?._id === user._id;
+
+    const advanceToNextQuestion = async () => {
+        if (!lobby || !isHost || lobby.currentQuestionIndex + 1 >= questions.length) {
+            return;
+        }
+
+        try {
+            const { data } = await api.patch(`/lobbies/${id}/next-question`);
+
+            setLobby((prevLobby) => (
+                prevLobby
+                    ? {
+                        ...prevLobby,
+                        currentQuestionIndex: data.currentQuestionIndex,
+                        questionStartedAt: data.questionStartedAt,
+                    }
+                    : prevLobby
+            ));
+        } catch (error) {
+            toast.error(
+                error.response?.data?.message || 'Failed to move to next question',
+                { style: { background: '#1E293B', color: '#F8FAFC' } }
+            );
+        }
+    };
+
+    const handleTimeUp = useEffectEvent(async () => {
+        if (!currentQuestion || handledQuestionRef.current === currentQuestion._id) {
+            return;
+        }
+
+        handledQuestionRef.current = currentQuestion._id;
+        setShowResults(true);
+
+        try {
+            const { data: scoreData } = await api.get(`/answers/scoreboard/${id}`);
+            setScoreboard(scoreData);
+        } catch {
+            console.error('Failed to fetch scoreboard');
+        }
+
+        const isLastQuestion = lobby ? lobby.currentQuestionIndex + 1 >= questions.length : true;
+        if (isLastQuestion) {
+            setQuizEnded(true);
+            return;
+        }
+
+        if (isHost) {
+            if (autoAdvanceTimeoutRef.current) {
+                clearTimeout(autoAdvanceTimeoutRef.current);
+            }
+
+            autoAdvanceTimeoutRef.current = setTimeout(() => {
+                advanceToNextQuestion();
+            }, RESULT_DISPLAY_MS);
+        }
+    });
+
     useEffect(() => {
         let isMounted = true;
-        const fetchLobbyParams = async () => {
+
+        const fetchLobbyState = async () => {
             try {
                 const { data: lobbyData } = await api.get(`/lobbies/${id}`);
-                if (!isMounted) return;
-                
+                if (!isMounted) {
+                    return;
+                }
+
                 if (lobbyData.status === 'closed') {
-                    toast('This lobby has been closed by the host.', { 
+                    if (autoAdvanceTimeoutRef.current) {
+                        clearTimeout(autoAdvanceTimeoutRef.current);
+                        autoAdvanceTimeoutRef.current = null;
+                    }
+
+                    toast('This lobby has been closed by the host.', {
                         icon: <Info size={18} className="text-blue-400" />,
-                        style: { background: '#1E293B', color: '#F8FAFC' } 
+                        style: { background: '#1E293B', color: '#F8FAFC' },
                     });
                     navigate('/lobbies');
                     return;
                 }
-                
-                setLobby(lobbyData);
 
-                if (questions.length === 0) {
-                    const { data: qData } = await api.get(`/questions?topic=${lobbyData.topic}`);
-                    setQuestions(qData);
-                    if (qData.length > 0) {
-                        setCurrentQuestion(qData[lobbyData.currentQuestionIndex]);
-                        setTimeLeft(qData[lobbyData.currentQuestionIndex]?.timeLimit || 30);
-                    }
-                } else if (lobbyData.currentQuestionIndex !== lobby?.currentQuestionIndex) {
-                    setCurrentQuestion(questions[lobbyData.currentQuestionIndex]);
-                    setTimeLeft(questions[lobbyData.currentQuestionIndex]?.timeLimit || 30);
+                const lobbyQuestions = Array.isArray(lobbyData.questions) ? lobbyData.questions : [];
+                const nextQuestion = lobbyQuestions[lobbyData.currentQuestionIndex] || null;
+                const attempt = lobbyData.userAttempt || {
+                    attemptNo: 1,
+                    answeredCount: 0,
+                    totalQuestions: lobbyQuestions.length,
+                    completed: false,
+                    answeredQuestionIds: [],
+                    answerMap: {},
+                    stoppedAtQuestionNumber: 1,
+                };
+                const questionChanged =
+                    activeQuestionRef.current.index !== lobbyData.currentQuestionIndex ||
+                    activeQuestionRef.current.startedAt !== (lobbyData.questionStartedAt || '');
+
+                setLobby(lobbyData);
+                setQuestions(lobbyQuestions);
+                setUserAttempt(attempt);
+
+                if (questionChanged) {
+                    activeQuestionRef.current = {
+                        index: lobbyData.currentQuestionIndex,
+                        startedAt: lobbyData.questionStartedAt || '',
+                    };
+                    handledQuestionRef.current = '';
+                    setCurrentQuestion(nextQuestion);
                     setShowResults(false);
-                    setHasSubmitted(false);
-                    setSelectedOption('');
-                    setResults([]);
+                    const existingSelection = nextQuestion && !attempt.completed
+                        ? (attempt.answerMap?.[nextQuestion._id] || '')
+                        : '';
+                    setHasSubmitted(Boolean(existingSelection));
+                    setSelectedOption(existingSelection);
+                    setQuizEnded(false);
+
+                    if (autoAdvanceTimeoutRef.current) {
+                        clearTimeout(autoAdvanceTimeoutRef.current);
+                        autoAdvanceTimeoutRef.current = null;
+                    }
                 }
-            } catch (error) {
-                // Ignore silent poll errors
+
+                if (nextQuestion) {
+                    setTimeLeft(getRemainingTime(lobbyData.questionStartedAt, lobbyData.questionTimeLimit));
+                }
+            } catch {
+                // Ignore transient polling failures.
             }
         };
 
-        fetchLobbyParams();
+        fetchLobbyState();
 
         const pollInterval = setInterval(() => {
-            fetchLobbyParams();
+            fetchLobbyState();
         }, 3000);
 
         return () => {
             isMounted = false;
             clearInterval(pollInterval);
+            if (autoAdvanceTimeoutRef.current) {
+                clearTimeout(autoAdvanceTimeoutRef.current);
+                autoAdvanceTimeoutRef.current = null;
+            }
         };
-    }, [id, navigate, lobby?.currentQuestionIndex, questions]);
+    }, [id, navigate]);
 
-    // Timer countdown
     useEffect(() => {
-        if (!currentQuestion || showResults || timeLeft <= 0 || quizEnded) return;
+        if (!currentQuestion || !lobby || showResults || quizEnded) {
+            return undefined;
+        }
+
+        const syncCountdown = () => {
+            const nextTimeLeft = getRemainingTime(lobby.questionStartedAt, lobby.questionTimeLimit);
+            setTimeLeft(nextTimeLeft);
+
+            if (nextTimeLeft <= 0) {
+                handleTimeUp();
+                return false;
+            }
+
+            return true;
+        };
+
+        if (!syncCountdown()) {
+            return undefined;
+        }
 
         const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timer);
-                    handleTimeUp();
-                    return 0;
-                }
-                return prev - 1;
-            });
+            if (!syncCountdown()) {
+                clearInterval(timer);
+            }
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [currentQuestion, showResults, timeLeft, quizEnded]);
-
-    const handleTimeUp = async () => {
-        setShowResults(true);
-        try {
-            const { data: resData } = await api.get(`/answers/results/${id}/${currentQuestion._id}`);
-            const { data: scoreData } = await api.get(`/answers/scoreboard/${id}`);
-            setResults(resData);
-            setScoreboard(scoreData);
-            
-            // Check if it was the last question
-            if (lobby && lobby.currentQuestionIndex + 1 >= questions.length) {
-                setQuizEnded(true);
-            }
-        } catch (error) {
-            console.error('Failed to fetch results');
-        }
-    };
+    }, [
+        currentQuestion,
+        lobby,
+        quizEnded,
+        showResults,
+    ]);
 
     const submitAnswer = async (option) => {
-        if (hasSubmitted || showResults) return;
+        if (hasSubmitted || showResults || !currentQuestion) {
+            return;
+        }
+
         setSelectedOption(option);
         setHasSubmitted(true);
+
         try {
             await api.post('/answers', {
                 lobbyId: id,
                 questionId: currentQuestion._id,
-                selectedOption: option
+                selectedOption: option,
             });
-            toast.success('Answer recorded!', { 
+
+            setUserAttempt((prev) => {
+                const answeredSet = new Set(prev.answeredQuestionIds || []);
+                answeredSet.add(currentQuestion._id);
+                const totalQuestions = prev.totalQuestions || questions.length;
+                const answeredCount = answeredSet.size;
+
+                return {
+                    ...prev,
+                    answeredCount,
+                    completed: totalQuestions > 0 && answeredCount >= totalQuestions,
+                    answeredQuestionIds: Array.from(answeredSet),
+                    answerMap: {
+                        ...(prev.answerMap || {}),
+                        [currentQuestion._id]: option,
+                    },
+                };
+            });
+
+            toast.success('Answer recorded!', {
                 icon: <CheckCircle size={18} className="text-emerald-500" />,
-                style: { background: '#1E293B', color: '#10B981', border: '1px solid #059669' } 
+                style: { background: '#1E293B', color: '#10B981', border: '1px solid #059669' },
             });
         } catch (error) {
             setHasSubmitted(false);
             setSelectedOption('');
+            toast.error(error.response?.data?.message || 'Failed to submit answer');
         }
     };
 
     const handleNextQuestion = async () => {
-        if (!lobby || lobby.host._id !== user._id) return;
-        if (lobby.currentQuestionIndex + 1 >= questions.length) {
-            toast('No more questions in this topic!', { style: { background: '#1E293B', color: '#F8FAFC' } });
-            return;
+        if (autoAdvanceTimeoutRef.current) {
+            clearTimeout(autoAdvanceTimeoutRef.current);
+            autoAdvanceTimeoutRef.current = null;
         }
-        try {
-            await api.patch(`/lobbies/${id}/next-question`);
-            setShowResults(false);
-            setHasSubmitted(false);
-            setSelectedOption('');
-        } catch (err) {
-            toast.error('Failed to move to next question', { style: { background: '#1E293B', color: '#F8FAFC' } });
-        }
+
+        await advanceToNextQuestion();
     };
 
     const handleCloseLobby = async () => {
-        if (!lobby || lobby.host._id !== user._id) return;
+        if (!lobby || !isHost) {
+            return;
+        }
+
         try {
             await api.patch(`/lobbies/${id}/close`);
             navigate('/lobbies');
-        } catch (err) {
+        } catch {
             console.error('Failed to close lobby');
+        }
+    };
+
+    const handleRestartQuiz = async () => {
+        if (!lobby || !isHost) {
+            return;
+        }
+
+        try {
+            const { data } = await api.patch(`/lobbies/${id}/restart`);
+            setLobby((prevLobby) => (
+                prevLobby
+                    ? {
+                        ...prevLobby,
+                        currentQuestionIndex: data.currentQuestionIndex,
+                        questionStartedAt: data.questionStartedAt,
+                        status: 'active',
+                    }
+                    : prevLobby
+            ));
+            setQuizEnded(false);
+            setShowResults(false);
+            setHasSubmitted(false);
+            setSelectedOption('');
+            toast.success('Quiz restarted. Attempt again from Question 1.');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to restart quiz');
         }
     };
 
@@ -164,13 +339,19 @@ const LobbyRoom = () => {
         );
     }
 
-    const isHost = lobby.host._id === user._id;
-
     return (
         <div className="container mx-auto p-4 md:p-6 max-w-6xl">
-            {quizEnded && <Confetti width={width} height={height} recycle={false} numberOfPieces={500} gravity={0.15} colors={['#F97316', '#3B82F6', '#10B981', '#FCD34D']} />}
-            
-            {/* Top Bar */}
+            {quizEnded && (
+                <Confetti
+                    width={width}
+                    height={height}
+                    recycle={false}
+                    numberOfPieces={500}
+                    gravity={0.15}
+                    colors={['#F97316', '#3B82F6', '#10B981', '#FCD34D']}
+                />
+            )}
+
             <div className="bg-brand-surface rounded-xl shadow-lg border border-brand-border p-5 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-brand-text flex items-center gap-3">
@@ -179,24 +360,48 @@ const LobbyRoom = () => {
                             {lobby.topic}
                         </span>
                     </h1>
-                    <div className="flex items-center gap-4 text-sm mt-2">
-                        <span className="text-brand-muted flex items-center gap-1.5"><Crown size={14} className="text-amber-500" /> <span className="text-brand-text">{lobby.host.name}</span></span>
-                        <span className="text-brand-border">•</span>
-                        <span className="text-brand-muted flex items-center gap-1.5"><Users size={14} /> <span className="text-brand-text">{lobby.members.length}/{lobby.maxMembers}</span></span>
+                    <div className="flex flex-wrap items-center gap-4 text-sm mt-2">
+                        <span className="text-brand-muted flex items-center gap-1.5">
+                            <Crown size={14} className="text-amber-500" />
+                            <span className="text-brand-text">{lobby.host.name}</span>
+                        </span>
+                        <span className="text-brand-border">|</span>
+                        <span className="text-brand-muted flex items-center gap-1.5">
+                            <Users size={14} />
+                            <span className="text-brand-text">{lobby.members.length}/{lobby.maxMembers}</span>
+                        </span>
+                        <span className="text-brand-border">|</span>
+                        <span className="text-brand-muted">
+                            <span className="text-brand-text font-semibold">{questions.length}</span> questions x{' '}
+                            <span className="text-brand-text font-semibold">{lobby.questionTimeLimit}s</span> each
+                        </span>
+                    </div>
+                    <div className="mt-2 text-xs text-brand-muted">
+                        {userAttempt.completed
+                            ? `Attempt ${userAttempt.attemptNo} completed. Select an option to start Attempt ${userAttempt.attemptNo + 1}.`
+                            : `Attempt ${userAttempt.attemptNo} • Progress: ${userAttempt.answeredCount}/${userAttempt.totalQuestions || questions.length} answered. Resume point: Q${userAttempt.stoppedAtQuestionNumber || 1}`}
                     </div>
                 </div>
-                
+
                 {isHost && (
                     <div className="flex gap-3">
+                        {quizEnded && (
+                            <button
+                                onClick={handleRestartQuiz}
+                                className="flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 px-5 py-2.5 rounded-xl font-bold transition-all border border-emerald-500/30 shadow-sm"
+                            >
+                                Restart Quiz <ChevronRight size={18} />
+                            </button>
+                        )}
                         {showResults && !quizEnded && (
-                            <button 
+                            <button
                                 onClick={handleNextQuestion}
                                 className="flex items-center gap-2 bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue px-5 py-2.5 rounded-xl font-bold transition-all border border-brand-blue/30 shadow-sm"
                             >
-                                Next Question <ChevronRight size={18} />
+                                Next Question Now <ChevronRight size={18} />
                             </button>
                         )}
-                        <button 
+                        <button
                             onClick={handleCloseLobby}
                             className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 px-5 py-2.5 rounded-xl font-bold transition-all border border-red-500/20"
                         >
@@ -207,16 +412,15 @@ const LobbyRoom = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Interaction Area */}
                 <div className="lg:col-span-2 space-y-6">
-                    {/* Question Card */}
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+                    <Motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4 }}
                         className="bg-brand-surface rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] border border-brand-border flex flex-col min-h-[450px] relative overflow-hidden"
                     >
-                        {/* Progress bar at top */}
                         <div className="absolute top-0 left-0 w-full h-1 bg-brand-bg">
-                            <motion.div 
+                            <Motion.div
                                 className="h-full bg-gradient-to-r from-brand-primary to-brand-primaryHover"
                                 initial={{ width: 0 }}
                                 animate={{ width: `${((lobby.currentQuestionIndex + (showResults ? 1 : 0)) / questions.length) * 100}%` }}
@@ -233,7 +437,7 @@ const LobbyRoom = () => {
                                 <Timer size={20} className={timeLeft <= 10 && !showResults ? 'text-red-500' : 'text-brand-muted'} /> {timeLeft}s
                             </div>
                         </div>
-                        
+
                         <div className="p-8 flex-grow flex flex-col justify-center">
                             <h2 className="text-2xl md:text-3xl font-bold text-brand-text text-center mb-10 leading-relaxed max-w-2xl mx-auto">
                                 {currentQuestion.text}
@@ -241,28 +445,36 @@ const LobbyRoom = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <AnimatePresence>
-                                    {currentQuestion.options.map((opt, idx) => {
-                                        let btnStyle = "bg-brand-bg border border-brand-border text-brand-text hover:border-brand-primary/50 hover:bg-brand-primary/5";
-                                        let Dot = () => <div className="w-6 h-6 rounded-full border border-brand-muted/30 flex items-center justify-center text-xs font-bold text-brand-muted mr-3 bg-brand-surface">{String.fromCharCode(65 + idx)}</div>;
-                                        
-                                        if (hasSubmitted && selectedOption === opt) {
-                                            btnStyle = "bg-brand-primary/10 border-brand-primary text-brand-text font-bold shadow-[0_0_20px_rgba(249,115,22,0.15)] ring-1 ring-brand-primary";
-                                            Dot = () => <div className="w-6 h-6 rounded-full bg-brand-primary flex items-center justify-center text-xs font-bold text-white mr-3 shadow-md">{String.fromCharCode(65 + idx)}</div>;
+                                    {currentQuestion.options.map((option, index) => {
+                                        let buttonStyle = 'bg-brand-bg border border-brand-border text-brand-text hover:border-brand-primary/50 hover:bg-brand-primary/5';
+                                        let Dot = () => (
+                                            <div className="w-6 h-6 rounded-full border border-brand-muted/30 flex items-center justify-center text-xs font-bold text-brand-muted mr-3 bg-brand-surface">
+                                                {String.fromCharCode(65 + index)}
+                                            </div>
+                                        );
+
+                                        if (hasSubmitted && selectedOption === option) {
+                                            buttonStyle = 'bg-brand-primary/10 border-brand-primary text-brand-text font-bold shadow-[0_0_20px_rgba(249,115,22,0.15)] ring-1 ring-brand-primary';
+                                            Dot = () => (
+                                                <div className="w-6 h-6 rounded-full bg-brand-primary flex items-center justify-center text-xs font-bold text-white mr-3 shadow-md">
+                                                    {String.fromCharCode(65 + index)}
+                                                </div>
+                                            );
                                         }
 
                                         return (
-                                            <motion.button
+                                            <Motion.button
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                transition={{ duration: 0.2, delay: idx * 0.1 }}
-                                                key={idx}
+                                                transition={{ duration: 0.2, delay: index * 0.1 }}
+                                                key={index}
                                                 disabled={hasSubmitted || showResults}
-                                                onClick={() => submitAnswer(opt)}
-                                                className={`p-5 rounded-xl text-lg transition-all duration-300 shadow-sm ${btnStyle} disabled:cursor-not-allowed text-left flex items-center group`}
+                                                onClick={() => submitAnswer(option)}
+                                                className={`p-5 rounded-xl text-lg transition-all duration-300 shadow-sm ${buttonStyle} disabled:cursor-not-allowed text-left flex items-center group`}
                                             >
                                                 <Dot />
-                                                <span className="flex-grow">{opt}</span>
-                                            </motion.button>
+                                                <span className="flex-grow">{option}</span>
+                                            </Motion.button>
                                         );
                                     })}
                                 </AnimatePresence>
@@ -270,26 +482,30 @@ const LobbyRoom = () => {
 
                             <AnimatePresence>
                                 {showResults && (
-                                    <motion.div 
+                                    <Motion.div
                                         initial={{ opacity: 0, height: 0, marginTop: 0 }}
                                         animate={{ opacity: 1, height: 'auto', marginTop: 32 }}
                                         className="p-5 bg-gradient-to-r from-brand-primary/10 to-transparent border-l-4 border-brand-primary rounded-r-xl text-brand-text font-medium flex items-center gap-3"
                                     >
                                         <Info className="text-brand-primary" size={24} />
                                         <div>
-                                            <p className="font-bold text-brand-primary mb-1">{quizEnded ? "Interview Session Complete!" : "Time is up!"}</p>
-                                            <p className="text-sm opacity-80">{quizEnded ? "Great job everyone. Check the final scoreboard." : "Answers are locked in. Check the live scoreboard."}</p>
+                                            <p className="font-bold text-brand-primary mb-1">
+                                                {quizEnded ? 'Interview Session Complete!' : 'Time is up!'}
+                                            </p>
+                                            <p className="text-sm opacity-80">
+                                                {quizEnded
+                                                    ? 'Great job everyone. Check the final scoreboard.'
+                                                    : 'Answers are locked in. The next question starts automatically in a moment.'}
+                                            </p>
                                         </div>
-                                    </motion.div>
+                                    </Motion.div>
                                 )}
                             </AnimatePresence>
                         </div>
-                    </motion.div>
+                    </Motion.div>
                 </div>
 
-                {/* Sidebar */}
                 <div className="space-y-6">
-                    {/* Scoreboard */}
                     <div className="bg-brand-surface rounded-2xl shadow-lg border border-brand-border overflow-hidden">
                         <div className="bg-gradient-to-r from-brand-primary to-brand-primaryHover text-white p-5 flex items-center justify-between">
                             <h3 className="font-bold flex items-center gap-2"><Trophy size={18} /> Live Scoreboard</h3>
@@ -308,24 +524,24 @@ const LobbyRoom = () => {
                             ) : (
                                 <ul className="divide-y divide-brand-border/50">
                                     <AnimatePresence>
-                                        {scoreboard.map((entry, idx) => (
-                                            <motion.li 
+                                        {scoreboard.map((entry, index) => (
+                                            <Motion.li
                                                 layout
                                                 initial={{ opacity: 0, x: -10 }}
                                                 animate={{ opacity: 1, x: 0 }}
-                                                key={idx} 
+                                                key={`${entry.name}-${index}`}
                                                 className="flex justify-between items-center p-4 hover:bg-brand-bg/50 transition-colors"
                                             >
                                                 <div className="flex items-center gap-4">
-                                                    <span className={`w-6 text-center font-bold ${idx === 0 ? 'text-amber-400 text-lg' : idx === 1 ? 'text-slate-300' : idx === 2 ? 'text-orange-700' : 'text-brand-muted text-sm'}`}>
-                                                        {idx === 0 ? <Crown size={16} className="mx-auto" /> : idx + 1}
+                                                    <span className={`w-6 text-center font-bold ${index === 0 ? 'text-amber-400 text-lg' : index === 1 ? 'text-slate-300' : index === 2 ? 'text-orange-700' : 'text-brand-muted text-sm'}`}>
+                                                        {index === 0 ? <Crown size={16} className="mx-auto" /> : index + 1}
                                                     </span>
                                                     <span className="font-medium text-brand-text">{entry.name}</span>
                                                 </div>
                                                 <span className="font-bold text-brand-primary bg-brand-primary/10 border border-brand-primary/20 px-3 py-1 rounded-full text-sm shadow-sm">
                                                     {entry.score} pts
                                                 </span>
-                                            </motion.li>
+                                            </Motion.li>
                                         ))}
                                     </AnimatePresence>
                                 </ul>
@@ -333,7 +549,6 @@ const LobbyRoom = () => {
                         </div>
                     </div>
 
-                    {/* Participants */}
                     <div className="bg-brand-surface rounded-2xl shadow-lg border border-brand-border overflow-hidden">
                         <div className="border-b border-brand-border p-5 bg-brand-bg/50">
                             <h3 className="font-bold text-brand-text flex items-center gap-2 text-sm uppercase tracking-wider">
@@ -341,16 +556,16 @@ const LobbyRoom = () => {
                             </h3>
                         </div>
                         <ul className="divide-y divide-brand-border max-h-64 overflow-y-auto p-2">
-                            {lobby.members.map((m) => (
-                                <li key={m._id} className="p-3 flex items-center gap-3 text-sm text-brand-text rounded-xl hover:bg-brand-bg/80 transition-colors cursor-default">
+                            {lobby.members.map((member) => (
+                                <li key={member._id} className="p-3 flex items-center gap-3 text-sm text-brand-text rounded-xl hover:bg-brand-bg/80 transition-colors cursor-default">
                                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-brand-bg to-brand-surface border border-brand-border flex items-center justify-center text-brand-primary font-bold shadow-inner">
-                                        {m.name.charAt(0).toUpperCase()}
+                                        {member.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="flex-grow flex flex-col leading-tight">
-                                        <span className="font-medium">{m.name}</span>
-                                        {m._id === user._id && <span className="text-brand-muted text-[11px] font-medium mt-0.5">You</span>}
+                                        <span className="font-medium">{member.name}</span>
+                                        {member._id === user._id && <span className="text-brand-muted text-[11px] font-medium mt-0.5">You</span>}
                                     </div>
-                                    {m._id === lobby.host._id && (
+                                    {member._id === lobby.host._id && (
                                         <div className="w-7 h-7 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center" title="Host">
                                             <Crown size={12} className="text-amber-500" />
                                         </div>

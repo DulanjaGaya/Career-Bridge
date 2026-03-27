@@ -8,6 +8,8 @@ const CreateLobby = () => {
     const [topic, setTopic] = useState('DSA');
     const [description, setDescription] = useState('');
     const [maxMembers, setMaxMembers] = useState(5);
+    const [questionCount, setQuestionCount] = useState(5);
+    const [questionTimeLimit, setQuestionTimeLimit] = useState(10);
     const [loading, setLoading] = useState(false);
     
     const navigate = useNavigate();
@@ -20,7 +22,9 @@ const CreateLobby = () => {
                 title,
                 topic,
                 description,
-                maxMembers
+                maxMembers,
+                questionCount,
+                questionTimeLimit,
             });
             toast.success('Room created successfully!');
             navigate(`/lobbies/${data._id}`);
@@ -91,6 +95,32 @@ const CreateLobby = () => {
                             onChange={(e) => setMaxMembers(e.target.value)}
                             className="w-full bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all font-sans"
                         />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label className="block text-sm font-medium text-brand-text mb-1">Questions Per Lobby</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={questionCount}
+                                onChange={(e) => setQuestionCount(e.target.value)}
+                                className="w-full bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all font-sans"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-brand-text mb-1">Seconds Per Question</label>
+                            <input
+                                type="number"
+                                min="5"
+                                max="120"
+                                value={questionTimeLimit}
+                                onChange={(e) => setQuestionTimeLimit(e.target.value)}
+                                className="w-full bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all font-sans"
+                            />
+                        </div>
                     </div>
 
                     <div className="pt-4">

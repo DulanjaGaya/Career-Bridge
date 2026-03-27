@@ -1,5 +1,6 @@
 import Answer from '../models/Answer.js';
 import Question from '../models/Question.js';
+import Lobby from '../models/Lobby.js';
 
 // @desc    Submit an answer
 // @route   POST /api/answers
@@ -7,6 +8,40 @@ import Question from '../models/Question.js';
 export const submitAnswer = async (req, res, next) => {
     try {
         const { lobbyId, questionId, selectedOption } = req.body;
+
+        const lobby = await Lobby.findById(lobbyId).select('questions status');
+        if (!lobby) {
+            res.status(404);
+            throw new Error('Lobby not found');
+        }
+
+        if (lobby.status === 'closed') {
+            res.status(400);
+            throw new Error('This lobby is closed');
+        }
+
+        const lobbyQuestionIds = lobby.questions.map((qId) => qId.toString());
+        if (!lobbyQuestionIds.includes(questionId)) {
+            res.status(400);
+            throw new Error('Question does not belong to this lobby');
+        }
+
+        const userAnswers = await Answer.find({
+            lobbyId,
+            userId: req.user._id,
+        }).select('questionId attemptNo');
+
+        const latestAttemptNo = userAnswers.reduce((max, ans) => Math.max(max, ans.attemptNo || 1), 1);
+        const currentAttemptAnswers = userAnswers.filter((ans) => (ans.attemptNo || 1) === latestAttemptNo);
+        const currentAttemptAnsweredSet = new Set(currentAttemptAnswers.map((ans) => ans.questionId.toString()));
+
+        const isCurrentAttemptComplete = lobbyQuestionIds.length > 0 && currentAttemptAnsweredSet.size >= lobbyQuestionIds.length;
+        const attemptNo = isCurrentAttemptComplete ? latestAttemptNo + 1 : latestAttemptNo;
+
+        if (!isCurrentAttemptComplete && currentAttemptAnsweredSet.has(questionId)) {
+            res.status(400);
+            throw new Error('You already answered this question in the current attempt');
+        }
 
         const question = await Question.findById(questionId);
         if (!question) {
@@ -20,6 +55,7 @@ export const submitAnswer = async (req, res, next) => {
             lobbyId,
             questionId,
             userId: req.user._id,
+            attemptNo,
             selectedOption,
             isCorrect,
         });
