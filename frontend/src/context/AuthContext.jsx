@@ -1,42 +1,100 @@
-import React, { createContext, useState, useEffect } from 'react';
-import api from '../api/axios';
+import React, { createContext, useContext, useState, useEffect } from 'react'
 
-export const AuthContext = createContext();
+/**
+ * AuthContext - Manages user authentication state
+ * Provides methods for login, logout, and signup
+ */
+const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [token, setToken] = useState(localStorage.getItem('token') || null)
 
-    useEffect(() => {
-        const userInfo = localStorage.getItem('userInfo');
-        if (userInfo) {
-            setUser(JSON.parse(userInfo));
-        }
-        setLoading(false);
-    }, []);
+  // Check if user is logged in on app load
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token')
+    const storedUser = localStorage.getItem('user')
+    
+    if (storedToken && storedUser) {
+      setToken(storedToken)
+      setUser(JSON.parse(storedUser))
+    }
+    setIsLoading(false)
+  }, [])
 
-    const login = async (email, password) => {
-        const { data } = await api.post('/auth/login', { email, password });
-        setUser(data);
-        localStorage.setItem('userInfo', JSON.stringify(data));
-        return data;
-    };
+  // Login user
+  const login = async (email, password) => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed')
+      }
 
-    const register = async (name, email, password) => {
-        const { data } = await api.post('/auth/register', { name, email, password });
-        setUser(data);
-        localStorage.setItem('userInfo', JSON.stringify(data));
-        return data;
-    };
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+      setToken(data.token)
+      setUser(data.user)
+      
+      return { success: true, user: data.user }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  }
 
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem('userInfo');
-    };
+  // Signup user
+  const signup = async (name, email, password, role = 'student') => {
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role })
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Signup failed')
+      }
 
-    return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
-            {children}
-        </AuthContext.Provider>
-    );
-};
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+      setToken(data.token)
+      setUser(data.user)
+      
+      return { success: true, user: data.user }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  }
+
+  // Logout user
+  const logout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setToken(null)
+    setUser(null)
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, token, isLoading, login, signup, logout }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+// Custom hook to use AuthContext
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider')
+  }
+  return context
+}

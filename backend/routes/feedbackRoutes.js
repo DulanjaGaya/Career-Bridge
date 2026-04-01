@@ -1,13 +1,25 @@
-import express from 'express';
-import { addFeedback, getFeedback, getResourceFeedback, deleteFeedback } from '../controllers/feedbackController.js';
-import { protect } from '../middleware/authMiddleware.js';
-
+const express = require('express');
 const router = express.Router();
 
-// Specific routes first to avoid parameter conflicts
-router.post('/', protect, addFeedback);
-router.get('/resource/:resourceId', protect, getResourceFeedback);
-router.get('/:resourceId', protect, getFeedback);
-router.delete('/:resourceId', protect, deleteFeedback);
+const auth = require('../middleware/auth');
 
-export default router;
+const {
+  getFeedback,
+  createFeedback,
+  updateFeedback,
+  deleteFeedback
+} = require('../controllers/feedbackController');
+
+// GET → Admin (all) + User (own)
+router.get('/', auth, getFeedback);
+
+// CREATE → User
+router.post('/', auth, createFeedback);
+
+// UPDATE → Owner only
+router.patch('/:id', auth, updateFeedback);
+
+// DELETE → Admin OR Owner
+router.delete('/:id', auth, deleteFeedback);
+
+module.exports = router;

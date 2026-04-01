@@ -1,15 +1,14 @@
-import express from 'express';
-import {
-    registerUser,
-    loginUser,
-    getUserProfile,
-} from '../controllers/authController.js';
-import { protect } from '../middleware/authMiddleware.js';
+/**
+ * Authentication Routes
+ */
+const express = require('express')
+const router = express.Router()
+const { signup, login } = require('../controllers/authController')
 
-const router = express.Router();
+// POST /api/auth/signup - Register new user
+router.post('/signup', signup)
 
-router.post('/register', registerUser);
-router.post('/login', loginUser);
-router.get('/me', protect, getUserProfile);
+// POST /api/auth/login - Login user
+router.post('/login', login)
 
-export default router;
+module.exports = router

@@ -1,16 +1,55 @@
-import mongoose from 'mongoose';
+/**
+ * Question Model
+ * Defines question schema with title, description, answers, and upvotes
+ */
+const mongoose = require('mongoose')
 
-const questionSchema = mongoose.Schema(
-    {
-        topic: { type: String, required: true },
-        text: { type: String, required: true },
-        options: [{ type: String, required: true }],
-        correctAnswer: { type: String, required: true },
-        difficulty: { type: String, required: true },
-        timeLimit: { type: Number, required: true, default: 30 },
+const answerSchema = new mongoose.Schema(
+  {
+    text: {
+      type: String,
+      required: true
     },
-    { timestamps: true }
-);
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    }
+  },
+  { timestamps: true }
+)
 
-const Question = mongoose.model('Question', questionSchema);
-export default Question;
+const questionSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: [true, 'Please provide a title'],
+      trim: true
+    },
+    description: {
+      type: String,
+      required: [true, 'Please provide a description']
+    },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    answers: [answerSchema],
+    upvotes: {
+      type: Number,
+      default: 0
+    },
+    upvoters: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
+    isDeleted: {
+      type: Boolean,
+      default: false
+    }
+  },
+  { timestamps: true }
+)
+
+module.exports = mongoose.model('Question', questionSchema)

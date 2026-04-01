@@ -1,69 +1,96 @@
-import { Routes, Route } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import Navbar from './components/Navbar';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ProtectedRoute from './components/ProtectedRoute';
-import Footer from './components/Footer';
-import LobbyList from './pages/Lobby/LobbyList';
-import CreateLobby from './pages/Lobby/CreateLobby';
-import LobbyRoom from './pages/Lobby/LobbyRoom';
-import ResourceTracker from './pages/Resource/ResourceTracker';
+import React from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import HomePage from './pages/HomePage'
+import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
+import EnhancedQAPage from './pages/EnhancedQAPage'
+import AdvancedFeedbackPage from './pages/AdvancedFeedbackPage'
+import FAQPage from './pages/FAQPage'
+import AdminPage from './pages/AdminPage'
 
-// Placeholder home page
-const Home = () => (
-    <div className="container mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-        <p>Welcome to the Interview Preparation Platform. Please use the navigation to explore features.</p>
-    </div>
-);
+/**
+ * ProtectedRoute - Wraps routes that require authentication
+ */
+const ProtectedRoute = ({ children }) => {
+  const { user, isLoading } = useAuth()
 
-function App() {
+  if (isLoading) {
     return (
-        <div className="min-h-screen bg-brand-bg flex flex-col">
-            <Navbar />
-            <Toaster position="top-right" toastOptions={{ style: { background: '#1E293B', color: '#F8FAFC' } }} />
-            
-            <main className="flex-grow">
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    
-                    <Route path="/" element={
-                        <ProtectedRoute>
-                            <Home />
-                        </ProtectedRoute>
-                    } />
-                    
-                    <Route path="/lobbies" element={
-                        <ProtectedRoute>
-                            <LobbyList />
-                        </ProtectedRoute>
-                    } />
-                    
-                    <Route path="/lobbies/create" element={
-                        <ProtectedRoute>
-                            <CreateLobby />
-                        </ProtectedRoute>
-                    } />
+      <div className="min-h-screen bg-dark-blue flex items-center justify-center">
+        <div className="text-gray-300">Loading...</div>
+      </div>
+    )
+  }
 
-                    <Route path="/lobbies/:id" element={
-                        <ProtectedRoute>
-                            <LobbyRoom />
-                        </ProtectedRoute>
-                    } />
-                    
-                    <Route path="/resources" element={
-                        <ProtectedRoute>
-                            <ResourceTracker />
-                        </ProtectedRoute>
-                    } />
-                </Routes>
-            </main>
-            
-            <Footer />
-        </div>
-    );
+  return user ? children : <Navigate to="/login" />
 }
 
-export default App;
+/**
+ * AdminRoute - Wraps routes that require admin access
+ */
+const AdminRoute = ({ children }) => {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-dark-blue flex items-center justify-center">
+        <div className="text-gray-300">Loading...</div>
+      </div>
+    )
+  }
+
+  return user && user.role === 'admin' ? children : <Navigate to="/" />
+}
+
+/**
+ * App - Main application with routing
+ */
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+
+          {/* Protected Routes */}
+          <Route
+            path="/qa"
+            element={
+              <ProtectedRoute>
+                <EnhancedQAPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/feedback"
+            element={
+              <ProtectedRoute>
+                <AdvancedFeedbackPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin Routes */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </AuthProvider>
+    </Router>
+  )
+}
+
+export default App

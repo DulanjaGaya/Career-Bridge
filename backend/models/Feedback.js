@@ -1,16 +1,86 @@
-import mongoose from 'mongoose';
+/**
+ * Feedback Model
+ * Defines feedback schema with message, user, and status
+ */
 
-const feedbackSchema = mongoose.Schema(
-    {
-        userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
-        resourceId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Resource' },
-        rating: { type: Number, required: true, min: 1, max: 5 },
-        comment: { type: String }
+const mongoose = require('mongoose')
+
+const feedbackSchema = new mongoose.Schema(
+  {
+    message: {
+      type: String,
+      required: [true, 'Please provide feedback'],
+      trim: true,
+      minlength: 5,
+      maxlength: 1000
     },
-    { timestamps: true }
-);
 
-feedbackSchema.index({ userId: 1, resourceId: 1 }, { unique: true });
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      required: true
+    },
 
-const Feedback = mongoose.model('Feedback', feedbackSchema);
-export default Feedback;
+    type: {
+      type: String,
+      enum: ['Bug', 'Feature Request', 'UX', 'Other'],
+      required: true
+    },
+
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true
+    },
+
+    // ⚠️ Admin-related fields (read-only for users)
+    status: {
+      type: String,
+      enum: ['pending', 'in-progress', 'resolved'],
+      default: 'pending',
+      immutable: true   // ❗ prevents updates
+    },
+
+    response: {
+      type: String,
+      default: null,
+      immutable: true   // ❗ prevents updates
+    },
+
+    priority: {
+      type: String,
+      enum: ['Low', 'Medium', 'High'],
+      default: 'Medium',
+      immutable: true   // ❗ prevents updates
+    },
+
+    // 💬 Comments (optional feature)
+    comments: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true
+        },
+        text: {
+          type: String,
+          required: true,
+          trim: true
+        },
+        author: {
+          type: String,
+          required: true
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
+    ]
+  },
+  { timestamps: true }
+)
+
+module.exports = mongoose.model('Feedback', feedbackSchema)
