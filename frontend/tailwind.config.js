@@ -9,7 +9,7 @@ export default {
       colors: {
         primary: '#26408a',
         accent: '#FF8C00',
-        'dark-blue': '#21375f',
+        'dark-blue': '#6a80aa',
       }
     },
   },
