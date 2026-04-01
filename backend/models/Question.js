@@ -47,6 +47,15 @@ const questionSchema = new mongoose.Schema(
     isDeleted: {
       type: Boolean,
       default: false
+    },
+    isPinned: {
+      type: Boolean,
+      default: false
+    },
+    status: {
+      type: String,
+      enum: ['Open', 'Answered', 'Resolved'],
+      default: 'Open'
     }
   },
   { timestamps: true }

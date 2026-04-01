@@ -41,7 +41,11 @@ const AdvancedFeedbackPage = () => {
     const fetchFeedbacks = async () => {
       try {
         setLoading(true)
-        const response = await axios.get(`${API_BASE_URL}/feedback`)
+        const response = await axios.get(`${API_BASE_URL}/feedback`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        })
         if (response.data.success) {
           setFeedbacks(response.data.data || [])
           setError(null)
@@ -169,17 +173,55 @@ const AdvancedFeedbackPage = () => {
     }
   }
 
-  const handleUpdateStatus = (feedbackId, newStatus) => {
-    setFeedbacks(feedbacks.map(f => f._id === feedbackId ? { ...f, status: newStatus } : f))
-    if (selectedFeedback?._id === feedbackId) {
-      setSelectedFeedback({ ...selectedFeedback, status: newStatus })
+  const handleUpdateStatus = async (feedbackId, newStatus) => {
+    try {
+      const response = await axios.patch(
+        `${API_BASE_URL}/feedback/${feedbackId}/status`,
+        { status: newStatus },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      )
+
+      if (response.data.success) {
+        setFeedbacks(feedbacks.map(f => f._id === feedbackId ? { ...f, status: newStatus } : f))
+        if (selectedFeedback?._id === feedbackId) {
+          setSelectedFeedback({ ...selectedFeedback, status: newStatus })
+        }
+        setSuccessMessage('Status updated successfully!')
+        setTimeout(() => setSuccessMessage(''), 3000)
+      }
+    } catch (err) {
+      console.error('Error updating status:', err)
+      alert('Error updating status: ' + (err.response?.data?.message || err.message))
     }
   }
 
-  const handleUpdatePriority = (feedbackId, newPriority) => {
-    setFeedbacks(feedbacks.map(f => f._id === feedbackId ? { ...f, priority: newPriority } : f))
-    if (selectedFeedback?._id === feedbackId) {
-      setSelectedFeedback({ ...selectedFeedback, priority: newPriority })
+  const handleUpdatePriority = async (feedbackId, newPriority) => {
+    try {
+      const response = await axios.patch(
+        `${API_BASE_URL}/feedback/${feedbackId}/priority`,
+        { priority: newPriority },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      )
+
+      if (response.data.success) {
+        setFeedbacks(feedbacks.map(f => f._id === feedbackId ? { ...f, priority: newPriority } : f))
+        if (selectedFeedback?._id === feedbackId) {
+          setSelectedFeedback({ ...selectedFeedback, priority: newPriority })
+        }
+        setSuccessMessage('Priority updated successfully!')
+        setTimeout(() => setSuccessMessage(''), 3000)
+      }
+    } catch (err) {
+      console.error('Error updating priority:', err)
+      alert('Error updating priority: ' + (err.response?.data?.message || err.message))
     }
   }
 
@@ -420,7 +462,8 @@ const AdvancedFeedbackPage = () => {
           </div>
         )}
 
-        {/* Analytics Section */}
+        {/* Analytics Section - Admin Only */}
+        {user?.role === 'admin' && (
         <div className="grid md:grid-cols-2 gap-8 mb-12">
           {/* Status Distribution */}
           <div className="glass-effect p-6 rounded-xl">
@@ -492,6 +535,7 @@ const AdvancedFeedbackPage = () => {
             </div>
           </div>
         </div>
+        )}
 
         {/* Filters */}
         <div className="grid md:grid-cols-3 gap-4 mb-8">
@@ -571,8 +615,8 @@ const AdvancedFeedbackPage = () => {
                       </div>
                     </button>
 
-                    {/* Edit/Delete Buttons for Owner */}
-                    {(user?._id === feedback.userId?._id || user?.role === 'admin') && (
+                    {/* Edit/Delete Buttons for Owner Only */}
+                    {user?._id === feedback.userId?._id && (
                       <div className="px-4 pb-3 flex gap-2 border-t border-white/10">
                         <button
                           onClick={(e) => {
@@ -648,8 +692,8 @@ const AdvancedFeedbackPage = () => {
                   </div>
                 )}
 
-                {/* User Edit/Delete (Owner or Admin) */}
-                {(user?._id === selectedFeedback.userId?._id || user?.role === 'admin') && (
+                {/* User Edit/Delete (Owner Only) */}
+                {user?._id === selectedFeedback.userId?._id && (
                   <div className="flex gap-2 pt-4 border-t border-white/20">
                     <button
                       onClick={() => handleEditFeedback(selectedFeedback)}

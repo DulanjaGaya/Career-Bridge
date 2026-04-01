@@ -113,7 +113,7 @@ exports.createQuestion = async (req, res) => {
 exports.updateQuestion = async (req, res) => {
   try {
     const { id } = req.params
-    const { title, description } = req.body
+    const { title, description, isPinned, status } = req.body
 
     const question = await Question.findById(id)
     if (!question) {
@@ -128,6 +128,14 @@ exports.updateQuestion = async (req, res) => {
       return res.status(403).json({ 
         success: false,
         message: 'Not authorized to edit this question' 
+      })
+    }
+    
+    // Only admin can pin/unpin or change status
+    if ((isPinned !== undefined || status !== undefined) && req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Only admins can pin questions or change status' 
       })
     }
 
@@ -196,6 +204,8 @@ exports.updateQuestion = async (req, res) => {
     // Update fields
     if (title) question.title = title.trim()
     if (description) question.description = description.trim()
+    if (isPinned !== undefined) question.isPinned = isPinned
+    if (status) question.status = status
 
     await question.save()
     await question.populate('userId', 'name email')

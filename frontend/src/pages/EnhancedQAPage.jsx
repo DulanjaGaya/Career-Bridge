@@ -21,9 +21,11 @@ const EnhancedQAPage = () => {
   const [filterStatus, setFilterStatus] = useState('all')
   const [selectedQuestion, setSelectedQuestion] = useState(null)
   const [adminReply, setAdminReply] = useState('')
+  const [userAnswer, setUserAnswer] = useState('')
   const [showNewQuestion, setShowNewQuestion] = useState(false)
   const [newQuestion, setNewQuestion] = useState({ title: '', description: '' })
   const [adminReplyError, setAdminReplyError] = useState('')
+  const [userAnswerError, setUserAnswerError] = useState('')
   const [newQuestionErrors, setNewQuestionErrors] = useState({})
   const [editingQuestion, setEditingQuestion] = useState(null)
   const [editFormData, setEditFormData] = useState({ title: '', description: '' })
@@ -53,7 +55,14 @@ const EnhancedQAPage = () => {
       const matchesSearch = q.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           q.description.toLowerCase().includes(searchTerm.toLowerCase())
       return matchesSearch
-    }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    }).sort((a, b) => {
+      // Pinned questions come first
+      if (a.isPinned !== b.isPinned) {
+        return a.isPinned ? -1 : 1
+      }
+      // Then sort by created date (newest first)
+      return new Date(b.createdAt) - new Date(a.createdAt)
+    })
   }, [searchTerm, questions])
 
   // Analytics
@@ -148,6 +157,58 @@ const EnhancedQAPage = () => {
     }
   }
 
+  const handlePostUserAnswer = async (questionId) => {
+    if (!userAnswer.trim()) {
+      setUserAnswerError('Please write an answer')
+      return
+    }
+
+    if (userAnswer.trim().length < 10) {
+      setUserAnswerError('Answer must be at least 10 characters')
+      return
+    }
+
+    if (userAnswer.trim().length > 2000) {
+      setUserAnswerError('Answer must not exceed 2000 characters')
+      return
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/questions/${questionId}/answers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          text: getCleanInput(userAnswer)
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to post answer')
+      }
+
+      setMessage({ type: 'success', text: 'Answer posted successfully!' })
+      setUserAnswer('')
+      setUserAnswerError('')
+      
+      // Update selectedQuestion with fresh data
+      if (selectedQuestion && selectedQuestion._id === questionId) {
+        const updatedQuestion = data.data
+        if (updatedQuestion) {
+          setSelectedQuestion(updatedQuestion)
+        }
+      }
+      
+      fetchQuestions()
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message })
+    }
+  }
+
   const handleDeleteAnswer = async (questionId, answerId) => {
     if (!window.confirm('Delete this answer?')) return
     try {
@@ -177,20 +238,59 @@ const EnhancedQAPage = () => {
     }
   }
 
-  const handleTogglePin = (questionId) => {
-    const updated = questions.map(q => 
-      q._id === questionId ? { ...q, isPinned: !q.isPinned } : q
-    )
-    setQuestions(updated)
-    setSelectedQuestion(updated.find(q => q._id === questionId))
+  const handleTogglePin = async (questionId) => {
+    try {
+      const currentQuestion = questions.find(q => q._id === questionId)
+      const response = await fetch(`http://localhost:5000/api/questions/${questionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          isPinned: !currentQuestion.isPinned
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle pin')
+      }
+
+      const updated = questions.map(q => 
+        q._id === questionId ? { ...q, isPinned: !q.isPinned } : q
+      )
+      setQuestions(updated)
+      setSelectedQuestion(updated.find(q => q._id === questionId))
+      setMessage({ type: 'success', text: 'Pin status updated!' })
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message })
+    }
   }
 
-  const handleMarkStatus = (questionId, status) => {
-    const updated = questions.map(q =>
-      q._id === questionId ? { ...q, status } : q
-    )
-    setQuestions(updated)
-    setSelectedQuestion(updated.find(q => q._id === questionId))
+  const handleMarkStatus = async (questionId, status) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/questions/${questionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update status')
+      }
+
+      const updated = questions.map(q =>
+        q._id === questionId ? { ...q, status } : q
+      )
+      setQuestions(updated)
+      setSelectedQuestion(updated.find(q => q._id === questionId))
+      setMessage({ type: 'success', text: 'Status updated!' })
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message })
+    }
   }
 
   const handleDeleteQuestion = async (questionId) => {
@@ -214,10 +314,25 @@ const EnhancedQAPage = () => {
     }
   }
 
-  const handleDeleteInappropriate = (questionId) => {
+  const handleDeleteInappropriate = async (questionId) => {
     if (!window.confirm('Delete inappropriate content?')) return
-    setQuestions(questions.filter(q => q._id !== questionId))
-    setSelectedQuestion(null)
+    try {
+      const response = await fetch(`http://localhost:5000/api/questions/${questionId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to delete inappropriate question')
+      }
+
+      setMessage({ type: 'success', text: 'Inappropriate question deleted!' })
+      setQuestions(questions.filter(q => q._id !== questionId))
+      setSelectedQuestion(null)
+    } catch (error) {
+      setMessage({ type: 'error', text: error.message })
+    }
   }
 
   const handleEditQuestion = (question) => {
@@ -297,7 +412,7 @@ const EnhancedQAPage = () => {
           </div>
         )}
 
-        {/* Admin Analytics */}
+        {/* Admin Analytics - Admin Only */}
         {user?.role === 'admin' && (
           <div className="glass-effect p-6 rounded-xl mb-8">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -496,25 +611,21 @@ const EnhancedQAPage = () => {
                         </button>
                       )}
 
-                      {/* Edit and Delete Buttons for Owner/Admin */}
-                      {(canEdit || canDelete) && editingQuestion !== question._id && (
+                      {/* Edit and Delete Buttons for Owner Only */}
+                      {isOwner && editingQuestion !== question._id && (
                         <div className="flex gap-2 px-1">
-                          {canEdit && (
-                            <button
-                              onClick={() => handleEditQuestion(question)}
-                              className="flex-1 flex items-center justify-center gap-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 px-3 py-1.5 rounded text-sm transition"
-                            >
-                              <Edit2 size={14} /> Edit
-                            </button>
-                          )}
-                          {canDelete && (
-                            <button
-                              onClick={() => handleDeleteQuestion(question._id)}
-                              className="flex-1 flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-1.5 rounded text-sm transition"
-                            >
-                              <Trash2 size={14} /> Delete
-                            </button>
-                          )}
+                          <button
+                            onClick={() => handleEditQuestion(question)}
+                            className="flex-1 flex items-center justify-center gap-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 px-3 py-1.5 rounded text-sm transition"
+                          >
+                            <Edit2 size={14} /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteQuestion(question._id)}
+                            className="flex-1 flex items-center justify-center gap-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-1.5 rounded text-sm transition"
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
                         </div>
                       )}
                     </div>
@@ -572,7 +683,7 @@ const EnhancedQAPage = () => {
                             <select
                               value={selectedQuestion.status || 'Open'}
                               onChange={(e) => handleMarkStatus(selectedQuestion._id, e.target.value)}
-                              className="w-full bg-white/10 border border-white/20 rounded px-3 py-2 text-sm"
+                             className="w-full bg-blue-500 border border-blue-700 rounded px-3 py-2 text-white text-sm"
                             >
                               <option value="Open">Mark as Open</option>
                               <option value="Answered">Mark as Answered</option>
@@ -621,6 +732,39 @@ const EnhancedQAPage = () => {
                   </div>
                 ))}
               </div>
+
+              {/* User Answer Form (for regular users) */}
+              {user && user?.role !== 'admin' && (
+                <div className="space-y-2 pt-4 border-t border-white/20">
+                  <p className="text-sm font-medium">Post Your Answer</p>
+                  <textarea
+                    value={userAnswer}
+                    onChange={(e) => {
+                      setUserAnswer(e.target.value)
+                      if (userAnswerError) {
+                        setUserAnswerError('')
+                      }
+                    }}
+                    placeholder="Write your answer (10-2000 characters)..."
+                    rows="3"
+                    className={`w-full bg-white/10 border rounded px-3 py-2 text-sm outline-none focus:border-accent resize-none transition ${
+                      userAnswerError ? 'border-red-500' : 'border-white/20'
+                    }`}
+                  />
+                  {userAnswerError && (
+                    <p className="text-red-400 text-xs flex items-center gap-1">
+                      <AlertCircle size={14} /> {userAnswerError}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-400">{userAnswer.length}/2000 characters</p>
+                  <button
+                    onClick={() => handlePostUserAnswer(selectedQuestion._id)}
+                    className="w-full bg-accent hover:bg-opacity-90 px-3 py-2 rounded text-sm font-medium transition flex items-center justify-center gap-2"
+                  >
+                    <Send size={16} /> Post Answer
+                  </button>
+                </div>
+              )}
 
               {/* Admin Reply */}
               {user?.role === 'admin' && (

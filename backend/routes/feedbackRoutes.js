@@ -7,7 +7,9 @@ const {
   getFeedback,
   createFeedback,
   updateFeedback,
-  deleteFeedback
+  deleteFeedback,
+  updateFeedbackStatus,
+  updateFeedbackPriority
 } = require('../controllers/feedbackController');
 
 // GET → Admin (all) + User (own)
@@ -18,6 +20,12 @@ router.post('/', auth, createFeedback);
 
 // UPDATE → Owner only
 router.patch('/:id', auth, updateFeedback);
+
+// UPDATE STATUS → Admin only
+router.patch('/:id/status', auth, updateFeedbackStatus);
+
+// UPDATE PRIORITY → Admin only
+router.patch('/:id/priority', auth, updateFeedbackPriority);
 
 // DELETE → Admin OR Owner
 router.delete('/:id', auth, deleteFeedback);

@@ -39,21 +39,18 @@ const feedbackSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ['pending', 'in-progress', 'resolved'],
-      default: 'pending',
-      immutable: true   // ❗ prevents updates
+      default: 'pending'
     },
 
     response: {
       type: String,
-      default: null,
-      immutable: true   // ❗ prevents updates
+      default: null
     },
 
     priority: {
       type: String,
       enum: ['Low', 'Medium', 'High'],
-      default: 'Medium',
-      immutable: true   // ❗ prevents updates
+      default: 'Medium'
     },
 
     // 💬 Comments (optional feature)

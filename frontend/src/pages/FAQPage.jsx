@@ -346,7 +346,8 @@ const FAQPage = () => {
           </select>
         </div>
 
-        {/* Analytics Section */}
+        {/* Analytics Section - Admin Only */}
+        {user?.role === 'admin' && (
         <div className="grid md:grid-cols-2 gap-8 mb-12">
           {/* Views vs Upvotes Chart */}
           <div className="glass-effect p-6 rounded-xl">
@@ -412,6 +413,7 @@ const FAQPage = () => {
             </ResponsiveContainer>
           </div>
         </div>
+        )}
 
         {/* FAQs List */}
         <div className="space-y-4 mb-12">

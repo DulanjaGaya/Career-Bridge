@@ -5,22 +5,13 @@
 
 const Feedback = require('../models/Feedback')
 
-// 🔹 GET FEEDBACK (Admin → all, User → own)
+// 🔹 GET FEEDBACK (Everyone → all feedbacks, edit/delete restricted on frontend & backend)
 exports.getFeedback = async (req, res) => {
   try {
-    let feedback;
-
-    if (req.user.role === 'admin') {
-      // Admin → get ALL feedback
-      feedback = await Feedback.find()
-        .populate('userId', 'name email')
-        .sort({ createdAt: -1 });
-    } else {
-      // User → get ONLY own feedback
-      feedback = await Feedback.find({ userId: req.user._id })
-        .populate('userId', 'name email')
-        .sort({ createdAt: -1 });
-    }
+    // Everyone gets ALL feedback (visibility only, edit/delete checked by ownership)
+    const feedback = await Feedback.find()
+      .populate('userId', 'name email')
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -227,6 +218,106 @@ exports.deleteFeedback = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error deleting feedback',
+      error: error.message
+    });
+  }
+};
+
+// 🔹 UPDATE FEEDBACK STATUS (Admin ONLY)
+exports.updateFeedbackStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // ✅ Only admin can update status
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins can update feedback status'
+      });
+    }
+
+    // Validate status
+    const validStatuses = ['pending', 'in-progress', 'resolved'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status'
+      });
+    }
+
+    const feedback = await Feedback.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true, runValidators: true }
+    ).populate('userId', 'name email');
+
+    if (!feedback) {
+      return res.status(404).json({
+        success: false,
+        message: 'Feedback not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: feedback
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error updating feedback status',
+      error: error.message
+    });
+  }
+};
+
+// 🔹 UPDATE FEEDBACK PRIORITY (Admin ONLY)
+exports.updateFeedbackPriority = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { priority } = req.body;
+
+    // ✅ Only admin can update priority
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins can update feedback priority'
+      });
+    }
+
+    // Validate priority
+    const validPriorities = ['Low', 'Medium', 'High'];
+    if (!priority || !validPriorities.includes(priority)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid priority'
+      });
+    }
+
+    const feedback = await Feedback.findByIdAndUpdate(
+      id,
+      { priority },
+      { new: true, runValidators: true }
+    ).populate('userId', 'name email');
+
+    if (!feedback) {
+      return res.status(404).json({
+        success: false,
+        message: 'Feedback not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: feedback
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error updating feedback priority',
       error: error.message
     });
   }
