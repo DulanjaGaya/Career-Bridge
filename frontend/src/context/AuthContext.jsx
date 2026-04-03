@@ -1,42 +1,47 @@
 import React, { createContext, useState, useEffect } from 'react';
-import api from '../api/axios';
+import { useQueryClient } from '@tanstack/react-query';
+import { authService } from '../services/authService';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-    useEffect(() => {
-        const userInfo = localStorage.getItem('userInfo');
-        if (userInfo) {
-            setUser(JSON.parse(userInfo));
-        }
-        setLoading(false);
-    }, []);
+  useEffect(() => {
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) setUser(currentUser);
+    setLoading(false);
+  }, []);
 
-    const login = async (email, password) => {
-        const { data } = await api.post('/auth/login', { email, password });
-        setUser(data);
-        localStorage.setItem('userInfo', JSON.stringify(data));
-        return data;
-    };
+  const login = async (credentials, role) => {
+    const data = role === 'employer' 
+      ? await authService.loginEmployer(credentials)
+      : await authService.loginStudent(credentials);
+    setUser(data.user);
+    queryClient.clear();
+    return data;
+  };
 
-    const register = async (name, email, password) => {
-        const { data } = await api.post('/auth/register', { name, email, password });
-        setUser(data);
-        localStorage.setItem('userInfo', JSON.stringify(data));
-        return data;
-    };
+  const register = async (userData, role) => {
+    const data = role === 'employer'
+      ? await authService.registerEmployer(userData)
+      : await authService.registerStudent(userData);
+    setUser(data.user);
+    queryClient.clear();
+    return data;
+  };
 
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem('userInfo');
-    };
+  const logout = () => {
+    authService.logout();
+    setUser(null);
+    queryClient.clear();
+  };
 
-    return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  return (
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

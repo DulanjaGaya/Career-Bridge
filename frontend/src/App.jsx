@@ -1,69 +1,95 @@
-import { Routes, Route } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import Navbar from './components/Navbar';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ProtectedRoute from './components/ProtectedRoute';
-import Footer from './components/Footer';
-import LobbyList from './pages/Lobby/LobbyList';
-import CreateLobby from './pages/Lobby/CreateLobby';
-import LobbyRoom from './pages/Lobby/LobbyRoom';
-import ResourceTracker from './pages/Resource/ResourceTracker';
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './hooks/useAuth';
+import Home from './pages/Home';
+import Login from './pages/auth/Login';
+// Employer Pages
+import EmployerDashboard from './pages/employer/Dashboard';
+import MyJobs from './pages/employer/MyJobs';
+import CreateJob from './pages/employer/CreateJob';
+import EditJob from './pages/employer/EditJob';
+import EmployerJobDetails from './pages/employer/JobDetailsPage';
+// Student Pages
+import StudentDashboard from './pages/student/StudentDashboardPage';
+import BrowseJobs from './pages/student/BrowseJobs';
+import AppliedJobsPage from './pages/student/AppliedJobsPage';
+import SavedJobsPage from './pages/student/SavedJobsPage';
+import StudentProfilePage from './pages/student/StudentProfilePage';
+import StudentJobDetails from './pages/student/JobDetailsPage';
+import Navbar from './components/common/Navbar';
+import Footer from './components/common/Footer';
 
-// Placeholder home page
-const Home = () => (
-    <div className="container mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-        <p>Welcome to the Interview Preparation Platform. Please use the navigation to explore features.</p>
-    </div>
-);
 
 function App() {
-    return (
-        <div className="min-h-screen bg-brand-bg flex flex-col">
-            <Navbar />
-            <Toaster position="top-right" toastOptions={{ style: { background: '#1E293B', color: '#F8FAFC' } }} />
-            
-            <main className="flex-grow">
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    
-                    <Route path="/" element={
-                        <ProtectedRoute>
-                            <Home />
-                        </ProtectedRoute>
-                    } />
-                    
-                    <Route path="/lobbies" element={
-                        <ProtectedRoute>
-                            <LobbyList />
-                        </ProtectedRoute>
-                    } />
-                    
-                    <Route path="/lobbies/create" element={
-                        <ProtectedRoute>
-                            <CreateLobby />
-                        </ProtectedRoute>
-                    } />
+  const { user, loading } = useAuth();
 
-                    <Route path="/lobbies/:id" element={
-                        <ProtectedRoute>
-                            <LobbyRoom />
-                        </ProtectedRoute>
-                    } />
-                    
-                    <Route path="/resources" element={
-                        <ProtectedRoute>
-                            <ResourceTracker />
-                        </ProtectedRoute>
-                    } />
-                </Routes>
-            </main>
-            
-            <Footer />
-        </div>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
     );
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex-grow">
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+          <Route path="/browse-jobs" element={<BrowseJobs />} />
+          <Route path="/jobs/:id" element={<StudentJobDetails />} />
+
+          {/* Employer Routes */}
+          <Route 
+            path="/employer/dashboard" 
+            element={user?.role === 'employer' ? <EmployerDashboard /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/employer/my-jobs" 
+            element={user?.role === 'employer' ? <MyJobs /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/employer/create-job" 
+            element={user?.role === 'employer' ? <CreateJob /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/employer/edit-job/:id" 
+            element={user?.role === 'employer' ? <EditJob /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/employer/jobs/:id" 
+            element={user?.role === 'employer' ? <EmployerJobDetails /> : <Navigate to="/login" />} 
+          />
+
+          {/* Student Routes */}
+          <Route 
+            path="/student/dashboard" 
+            element={user?.role === 'student' ? <StudentDashboard /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/student/applied-jobs" 
+            element={user?.role === 'student' ? <AppliedJobsPage /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/student/saved-jobs" 
+            element={user?.role === 'student' ? <SavedJobsPage /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/student/profile" 
+            element={user?.role === 'student' ? <StudentProfilePage /> : <Navigate to="/login" />} 
+          />
+
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </main>
+      <Footer />
+      
+    </div>
+  );
 }
 
 export default App;
