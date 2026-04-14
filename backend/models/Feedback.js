@@ -38,8 +38,8 @@ const feedbackSchema = new mongoose.Schema(
     // ⚠️ Admin-related fields (read-only for users)
     status: {
       type: String,
-      enum: ['pending', 'in-progress', 'resolved'],
-      default: 'pending'
+      enum: ['in-progress', 'resolved'],
+      default: 'in-progress'
     },
 
     response: {
@@ -49,8 +49,8 @@ const feedbackSchema = new mongoose.Schema(
 
     priority: {
       type: String,
-      enum: ['Low', 'Medium', 'High'],
-      default: 'Medium'
+      enum: ['Low', 'High'],
+      default: 'Low'
     },
 
     // 💬 Comments (optional feature)

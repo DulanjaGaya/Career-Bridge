@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Search, CheckCircle, Trash2, Pin, PinOff, Edit2, MessageSquare, Filter, TrendingUp, AlertCircle, Send } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import Navbar from '../components/Navbar'
@@ -12,7 +13,8 @@ import { validateOfficialAnswerSubmission, validateQAForm, getCleanInput } from 
  * - Admin: Provide official answers, manage questions, analytics
  */
 const EnhancedQAPage = () => {
-  const { user, token } = useAuth()
+  const { user, token, logout } = useAuth()
+  const navigate = useNavigate()
   const [questions, setQuestions] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -35,11 +37,23 @@ const EnhancedQAPage = () => {
     fetchQuestions()
   }, [])
 
+  const handleAuthFailure = (error) => {
+    const message = error?.message || ''
+    if (/invalid token|not authorized|no authorization/i.test(message)) {
+      logout()
+      setMessage({ type: 'error', text: 'Session expired. Please log in again.' })
+      navigate('/login')
+      return true
+    }
+    return false
+  }
+
   const fetchQuestions = async () => {
     try {
       setLoading(true)
       const response = await fetch('http://localhost:5000/api/questions')
       const data = await response.json()
+      console.log('Fetched questions:', data.data)
       setQuestions(data.data || [])
     } catch (error) {
       console.error('Failed to fetch questions:', error)
@@ -72,6 +86,11 @@ const EnhancedQAPage = () => {
   ]
 
   const handlePostQuestion = async () => {
+    if (!token) {
+      setMessage({ type: 'error', text: 'Session expired or not logged in. Please log in again.' })
+      return
+    }
+
     // Log token for debugging
     console.log('Posting question with token:', token)
     
@@ -102,13 +121,19 @@ const EnhancedQAPage = () => {
         throw new Error(data.message || 'Failed to post question')
       }
 
+      console.log('Question posted successfully:', data.data)
       setMessage({ type: 'success', text: 'Question posted successfully!' })
       setNewQuestion({ title: '', description: '' })
       setNewQuestionErrors({})
       setShowNewQuestion(false)
-      fetchQuestions()
+      console.log('Calling fetchQuestions after posting...')
+      await fetchQuestions()
+      console.log('Finished fetching questions')
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      console.error('Error posting question:', error)
+      if (!handleAuthFailure(error)) {
+        setMessage({ type: 'error', text: error.message })
+      }
     }
   }
 
@@ -118,6 +143,11 @@ const EnhancedQAPage = () => {
     if (!validation.valid) {
       setAdminReplyError(validation.errors.answer)
       setMessage({ type: 'error', text: 'Please fix the answer below' })
+      return
+    }
+
+    if (!token) {
+      setMessage({ type: 'error', text: 'Session expired or not logged in. Please log in again.' })
       return
     }
 
@@ -153,7 +183,9 @@ const EnhancedQAPage = () => {
       
       fetchQuestions()
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      if (!handleAuthFailure(error)) {
+        setMessage({ type: 'error', text: error.message })
+      }
     }
   }
 
@@ -170,6 +202,11 @@ const EnhancedQAPage = () => {
 
     if (userAnswer.trim().length > 2000) {
       setUserAnswerError('Answer must not exceed 2000 characters')
+      return
+    }
+
+    if (!token) {
+      setMessage({ type: 'error', text: 'Session expired or not logged in. Please log in again.' })
       return
     }
 
@@ -205,7 +242,9 @@ const EnhancedQAPage = () => {
       
       fetchQuestions()
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      if (!handleAuthFailure(error)) {
+        setMessage({ type: 'error', text: error.message })
+      }
     }
   }
 
@@ -234,7 +273,9 @@ const EnhancedQAPage = () => {
         }
       }
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      if (!handleAuthFailure(error)) {
+        setMessage({ type: 'error', text: error.message })
+      }
     }
   }
 
@@ -263,7 +304,9 @@ const EnhancedQAPage = () => {
       setSelectedQuestion(updated.find(q => q._id === questionId))
       setMessage({ type: 'success', text: 'Pin status updated!' })
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      if (!handleAuthFailure(error)) {
+        setMessage({ type: 'error', text: error.message })
+      }
     }
   }
 
@@ -289,7 +332,9 @@ const EnhancedQAPage = () => {
       setSelectedQuestion(updated.find(q => q._id === questionId))
       setMessage({ type: 'success', text: 'Status updated!' })
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      if (!handleAuthFailure(error)) {
+        setMessage({ type: 'error', text: error.message })
+      }
     }
   }
 
@@ -310,7 +355,9 @@ const EnhancedQAPage = () => {
       setSelectedQuestion(null)
       fetchQuestions()
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      if (!handleAuthFailure(error)) {
+        setMessage({ type: 'error', text: error.message })
+      }
     }
   }
 
@@ -331,7 +378,9 @@ const EnhancedQAPage = () => {
       setQuestions(questions.filter(q => q._id !== questionId))
       setSelectedQuestion(null)
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      if (!handleAuthFailure(error)) {
+        setMessage({ type: 'error', text: error.message })
+      }
     }
   }
 
@@ -373,7 +422,9 @@ const EnhancedQAPage = () => {
       fetchQuestions()
       setSelectedQuestion(null)
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      if (!handleAuthFailure(error)) {
+        setMessage({ type: 'error', text: error.message })
+      }
     }
   }
 

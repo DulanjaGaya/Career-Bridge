@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { MessageSquare, ThumbsUp, Trash2, Edit2, CheckCircle, AlertCircle, Send } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import Navbar from '../components/Navbar'
@@ -11,7 +12,8 @@ import { validateQAForm, validateQAAnswerSubmission, getCleanInput } from '../ut
  * Admins can delete inappropriate content
  */
 const QAPage = () => {
-  const { user, token } = useAuth()
+  const { user, token, logout } = useAuth()
+  const navigate = useNavigate()
   const [questions, setQuestions] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -29,6 +31,17 @@ const QAPage = () => {
   useEffect(() => {
     fetchQuestions()
   }, [])
+
+  const handleAuthFailure = (error) => {
+    const message = error?.message || ''
+    if (/invalid token|not authorized|no authorization/i.test(message)) {
+      logout()
+      setMessage({ type: 'error', text: 'Session expired. Please log in again.' })
+      navigate('/login')
+      return true
+    }
+    return false
+  }
 
   const fetchQuestions = async () => {
     try {
@@ -60,6 +73,11 @@ const QAPage = () => {
 
   const handleSubmitQuestion = async (e) => {
     e.preventDefault()
+
+    if (!token) {
+      setMessage({ type: 'error', text: 'Session expired or not logged in. Please log in again.' })
+      return
+    }
 
     // Log token for debugging
     console.log('Submitting question with token:', token)
@@ -101,12 +119,19 @@ const QAPage = () => {
       setShowForm(false)
       fetchQuestions()
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      if (!handleAuthFailure(error)) {
+        setMessage({ type: 'error', text: error.message })
+      }
     }
   }
 
   const handleDeleteQuestion = async (questionId) => {
     if (!window.confirm('Are you sure you want to delete this question?')) return
+
+    if (!token) {
+      setMessage({ type: 'error', text: 'Session expired or not logged in. Please log in again.' })
+      return
+    }
 
     try {
       const response = await fetch(`http://localhost:5000/api/questions/${questionId}`, {
@@ -122,11 +147,18 @@ const QAPage = () => {
       setMessage({ type: 'success', text: 'Question deleted!' })
       fetchQuestions()
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      if (!handleAuthFailure(error)) {
+        setMessage({ type: 'error', text: error.message })
+      }
     }
   }
 
   const handleUpvote = async (questionId) => {
+    if (!token) {
+      setMessage({ type: 'error', text: 'Session expired or not logged in. Please log in again.' })
+      return
+    }
+
     try {
       const response = await fetch(`http://localhost:5000/api/questions/${questionId}/upvote`, {
         method: 'POST',
@@ -140,7 +172,9 @@ const QAPage = () => {
 
       fetchQuestions()
     } catch (error) {
-      console.error('Upvote failed:', error)
+      if (!handleAuthFailure(error)) {
+        console.error('Upvote failed:', error)
+      }
     }
   }
 
@@ -160,6 +194,11 @@ const QAPage = () => {
 
   const handleSubmitAnswer = async (e, questionId) => {
     e.preventDefault()
+
+    if (!token) {
+      setMessage({ type: 'error', text: 'Session expired or not logged in. Please log in again.' })
+      return
+    }
 
     const answerText = answerData[questionId] || ''
     
@@ -207,7 +246,9 @@ const QAPage = () => {
       setExpandedAnswerId(null)
       fetchQuestions()
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      if (!handleAuthFailure(error)) {
+        setMessage({ type: 'error', text: error.message })
+      }
     }
   }
 

@@ -18,13 +18,14 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
-        try {
-            await login(email, password);
+            setIsLoading(true);
+        const result = await login(email, password);
+
+        if (result.success) {
             toast.success('Welcome back!', { style: { background: '#1E293B', color: '#10B981' } });
             navigate('/');
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Login failed', { style: { background: '#1E293B', color: '#F8FAFC' } });
+        } else {
+            toast.error(result.error || 'Login failed', { style: { background: '#1E293B', color: '#F8FAFC' } });
             setIsLoading(false);
         }
     };

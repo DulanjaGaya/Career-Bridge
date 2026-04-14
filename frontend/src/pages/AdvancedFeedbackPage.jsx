@@ -21,7 +21,6 @@ const AdvancedFeedbackPage = () => {
   const [newComment, setNewComment] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterType, setFilterType] = useState('all')
-  const [filterPriority, setFilterPriority] = useState('all')
   const [showNewFeedbackForm, setShowNewFeedbackForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -65,14 +64,12 @@ const AdvancedFeedbackPage = () => {
     return feedbacks.filter(f => {
       const statusMatch = filterStatus === 'all' || f.status === filterStatus
       const typeMatch = filterType === 'all' || f.type === filterType
-      const priorityMatch = filterPriority === 'all' || f.priority === filterPriority
-      return statusMatch && typeMatch && priorityMatch
+      return statusMatch && typeMatch
     })
-  }, [feedbacks, filterStatus, filterType, filterPriority])
+  }, [feedbacks, filterStatus, filterType])
 
   // Analytics data
   const statusDistribution = [
-    { name: 'pending', value: feedbacks.filter(f => f.status === 'pending').length },
     { name: 'in-progress', value: feedbacks.filter(f => f.status === 'in-progress').length },
     { name: 'resolved', value: feedbacks.filter(f => f.status === 'resolved').length }
   ]
@@ -92,18 +89,11 @@ const AdvancedFeedbackPage = () => {
     { rating: '⭐⭐⭐⭐⭐', count: feedbacks.filter(f => f.rating === 5).length }
   ]
 
-  const priorityData = [
-    { name: 'Low', value: feedbacks.filter(f => f.priority === 'Low').length },
-    { name: 'Medium', value: feedbacks.filter(f => f.priority === 'Medium').length },
-    { name: 'High', value: feedbacks.filter(f => f.priority === 'High').length }
-  ]
+
 
   // Stats cards
   const stats = {
     total: feedbacks.length,
-    pending: feedbacks.filter(f => f.status === 'pending').length,
-    inProgress: feedbacks.filter(f => f.status === 'in-progress').length,
-    resolved: feedbacks.filter(f => f.status === 'resolved').length,
     avgRating: (feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length).toFixed(1)
   }
 
@@ -316,8 +306,8 @@ const AdvancedFeedbackPage = () => {
   }
 
   const COLORS = ['#1e3a8a', '#FF8C00', '#10b981', '#f59e0b']
-  const PRIORITY_COLORS = { 'Low': '#10b981', 'Medium': '#f59e0b', 'High': '#ef4444' }
-  const STATUS_COLORS = { 'pending': '#3b82f6', 'in-progress': '#f59e0b', 'resolved': '#10b981' }
+  const PRIORITY_COLORS = { 'Low': '#10b981', 'High': '#ef4444' }
+  const STATUS_COLORS = { 'in-progress': '#f59e0b', 'resolved': '#10b981' }
 
   return (
     <div className="min-h-screen flex flex-col bg-dark-blue">
@@ -339,22 +329,10 @@ const AdvancedFeedbackPage = () => {
         )}
 
         {/* Summary Cards */}
-        <div className="grid md:grid-cols-5 gap-4 mb-12">
+        <div className="grid md:grid-cols-2 gap-4 mb-12">
           <div className="glass-effect p-6 rounded-xl">
             <div className="text-gray-400 text-sm mb-2">Total Feedback</div>
             <div className="text-3xl font-bold">{stats.total}</div>
-          </div>
-          <div className="glass-effect p-6 rounded-xl border-l-4 border-blue-500">
-            <div className="text-gray-400 text-sm mb-2">Pending</div>
-            <div className="text-3xl font-bold text-blue-400">{stats.pending}</div>
-          </div>
-          <div className="glass-effect p-6 rounded-xl border-l-4 border-yellow-500">
-            <div className="text-gray-400 text-sm mb-2">In Progress</div>
-            <div className="text-3xl font-bold text-yellow-400">{stats.inProgress}</div>
-          </div>
-          <div className="glass-effect p-6 rounded-xl border-l-4 border-green-500">
-            <div className="text-gray-400 text-sm mb-2">Resolved</div>
-            <div className="text-3xl font-bold text-green-400">{stats.resolved}</div>
           </div>
           <div className="glass-effect p-6 rounded-xl border-l-4 border-accent">
             <div className="text-gray-400 text-sm mb-2">Avg Rating</div>
@@ -502,20 +480,6 @@ const AdvancedFeedbackPage = () => {
             </ResponsiveContainer>
           </div>
 
-          {/* Priority Distribution */}
-          <div className="glass-effect p-6 rounded-xl">
-            <h3 className="text-lg font-bold mb-4">Priority Levels</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={priorityData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" />
-                <YAxis stroke="rgba(255,255,255,0.5)" />
-                <Tooltip contentStyle={{ backgroundColor: '#1e3a8a', border: 'none', borderRadius: '8px' }} />
-                <Bar dataKey="value" fill="#1e3a8a" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
           {/* Rating Distribution */}
           <div className="glass-effect p-6 rounded-xl">
             <h3 className="text-lg font-bold mb-4">Customer Ratings</h3>
@@ -538,18 +502,7 @@ const AdvancedFeedbackPage = () => {
         )}
 
         {/* Filters */}
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 outline-none focus:border-accent"
-          >
-            <option value="all" className="bg-primary">All Status</option>
-            <option value="pending" className="bg-primary">Pending</option>
-            <option value="in-progress" className="bg-primary">In Progress</option>
-            <option value="resolved" className="bg-primary">Resolved</option>
-          </select>
-
+        <div className="mb-8">
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
@@ -560,17 +513,6 @@ const AdvancedFeedbackPage = () => {
             <option value="Feature Request" className="bg-primary">Feature Request</option>
             <option value="UX" className="bg-primary">UX/Design</option>
             <option value="Other" className="bg-primary">Other</option>
-          </select>
-
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 outline-none focus:border-accent"
-          >
-            <option value="all" className="bg-primary">All Priorities</option>
-            <option value="Low" className="bg-primary">Low</option>
-            <option value="Medium" className="bg-primary">Medium</option>
-            <option value="High" className="bg-primary">High</option>
           </select>
         </div>
 
@@ -668,11 +610,10 @@ const AdvancedFeedbackPage = () => {
                     <div>
                       <label className="text-sm text-gray-400 block mb-1">Status</label>
                       <select
-                      value={selectedFeedback.status || 'pending'}
+                      value={selectedFeedback.status || 'in-progress'}
                       onChange={(e) => handleUpdateStatus(selectedFeedback._id, e.target.value)}
                       className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm"
                     >
-                      <option value="pending">Pending</option>
                       <option value="in-progress">In Progress</option>
                       <option value="resolved">Resolved</option>
                       </select>
@@ -685,7 +626,6 @@ const AdvancedFeedbackPage = () => {
                         className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm"
                       >
                         <option value="Low">Low</option>
-                        <option value="Medium">Medium</option>
                         <option value="High">High</option>
                       </select>
                     </div>

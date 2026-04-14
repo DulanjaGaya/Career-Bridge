@@ -37,14 +37,19 @@ const LoginPage = () => {
     }
 
     setLoading(true)
-    const result = await login(formData.email, formData.password)
-    setLoading(false)
+    try {
+      const result = await login(formData.email, formData.password)
+      setLoading(false)
 
-    if (result.success) {
-      setMessage({ type: 'success', text: 'Login successful! Redirecting...' })
-      setTimeout(() => navigate('/'), 2000)
-    } else {
-      setMessage({ type: 'error', text: result.error })
+      if (result.success) {
+        setMessage({ type: 'success', text: 'Login successful! Redirecting...' })
+        setTimeout(() => navigate('/'), 2000)
+      } else {
+        setMessage({ type: 'error', text: result.error })
+      }
+    } catch (error) {
+      setLoading(false)
+      setMessage({ type: 'error', text: error.message || 'Login failed' })
     }
   }
 

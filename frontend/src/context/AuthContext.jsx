@@ -31,21 +31,21 @@ export const AuthProvider = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       })
-      
+
       const data = await response.json()
-      
+
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed')
+        return { success: false, error: data.message || 'Login failed' }
       }
 
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
       setToken(data.token)
       setUser(data.user)
-      
+
       return { success: true, user: data.user }
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.message || 'Login failed' }
     }
   }
 
@@ -57,21 +57,21 @@ export const AuthProvider = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role })
       })
-      
+
       const data = await response.json()
-      
+
       if (!response.ok) {
-        throw new Error(data.message || 'Signup failed')
+        return { success: false, error: data.message || 'Signup failed' }
       }
 
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
       setToken(data.token)
       setUser(data.user)
-      
+
       return { success: true, user: data.user }
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.message || 'Signup failed' }
     }
   }
 
@@ -84,7 +84,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, signup, register: signup, logout }}>
       {children}
     </AuthContext.Provider>
   )

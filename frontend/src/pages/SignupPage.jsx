@@ -93,14 +93,19 @@ const SignupPage = () => {
     }
 
     setLoading(true)
-    const result = await signup(formData.name, formData.email, formData.password, formData.role)
-    setLoading(false)
+    try {
+      const result = await signup(formData.name, formData.email, formData.password, formData.role)
+      setLoading(false)
 
-    if (result.success) {
-      setMessage({ type: 'success', text: 'Account created! Redirecting to dashboard...' })
-      setTimeout(() => navigate('/dashboard'), 2000)
-    } else {
-      setMessage({ type: 'error', text: result.error })
+      if (result.success) {
+        setMessage({ type: 'success', text: 'Account created! Redirecting to dashboard...' })
+        setTimeout(() => navigate('/dashboard'), 2000)
+      } else {
+        setMessage({ type: 'error', text: result.error })
+      }
+    } catch (error) {
+      setLoading(false)
+      setMessage({ type: 'error', text: error.message || 'Signup failed' })
     }
   }
 

@@ -10,7 +10,7 @@ const Register = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { register, user } = useContext(AuthContext);
+    const { signup, user } = useContext(AuthContext);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -21,9 +21,14 @@ const Register = () => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await register(name, email, password);
-            toast.success('Account created successfully!', { style: { background: '#1E293B', color: '#10B981' } });
-            navigate('/');
+            const result = await signup(name, email, password);
+            if (result.success) {
+                toast.success('Account created successfully!', { style: { background: '#1E293B', color: '#10B981' } });
+                navigate('/');
+            } else {
+                toast.error(result.error || 'Registration failed', { style: { background: '#1E293B', color: '#F8FAFC' } });
+                setIsLoading(false);
+            }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Registration failed', { style: { background: '#1E293B', color: '#F8FAFC' } });
             setIsLoading(false);

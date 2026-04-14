@@ -94,11 +94,16 @@ exports.createQuestion = async (req, res) => {
       userId: req.user._id
     })
 
-    await question.populate('userId', 'name email')
+    console.log('Question created:', question._id)
+
+    const populatedQuestion = await Question.findById(question._id)
+      .populate('userId', 'name email')
+
+    console.log('Question saved to DB and populated:', populatedQuestion)
 
     res.status(201).json({
       success: true,
-      data: question
+      data: populatedQuestion
     })
   } catch (error) {
     res.status(500).json({ 
