@@ -1,14 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react'
-import { Send, MessageSquare, Star, Edit2, Trash2, Filter, TrendingUp, AlertCircle, X, CheckCircle } from 'lucide-react'
+import { Send, Star, Edit2, Trash2, Filter, TrendingUp, AlertCircle, X, CheckCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { validateFeedbackForm, validateComment, getCleanInput } from '../utils/validations'
+import { validateFeedbackForm, getCleanInput } from '../utils/validations'
 import axios from 'axios'
 
 /**
- * AdvancedFeedbackPage - Enhanced feedback with comments, ratings, analytics, admin edit/delete
+ * AdvancedFeedbackPage - Enhanced feedback with ratings, analytics, admin edit/delete
  */
 const AdvancedFeedbackPage = () => {
   const { user, token } = useAuth()
@@ -18,8 +18,6 @@ const AdvancedFeedbackPage = () => {
   const [error, setError] = useState(null)
   const [selectedFeedback, setSelectedFeedback] = useState(null)
   const [successMessage, setSuccessMessage] = useState('')
-  const [newComment, setNewComment] = useState('')
-  const [filterStatus, setFilterStatus] = useState('all')
   const [filterType, setFilterType] = useState('all')
   const [showNewFeedbackForm, setShowNewFeedbackForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
@@ -62,18 +60,12 @@ const AdvancedFeedbackPage = () => {
   // Filter feedbacks
   const filteredFeedbacks = useMemo(() => {
     return feedbacks.filter(f => {
-      const statusMatch = filterStatus === 'all' || f.status === filterStatus
       const typeMatch = filterType === 'all' || f.type === filterType
-      return statusMatch && typeMatch
+      return typeMatch
     })
-  }, [feedbacks, filterStatus, filterType])
+  }, [feedbacks, filterType])
 
   // Analytics data
-  const statusDistribution = [
-    { name: 'in-progress', value: feedbacks.filter(f => f.status === 'in-progress').length },
-    { name: 'resolved', value: feedbacks.filter(f => f.status === 'resolved').length }
-  ]
-
   const typeDistribution = [
     { name: 'Bug', value: feedbacks.filter(f => f.type === 'Bug').length },
     { name: 'Feature', value: feedbacks.filter(f => f.type === 'Feature Request').length },
@@ -95,35 +87,6 @@ const AdvancedFeedbackPage = () => {
   const stats = {
     total: feedbacks.length,
     avgRating: (feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length).toFixed(1)
-  }
-
-  const handleAddComment = () => {
-    const validation = validateComment(newComment)
-    if (!validation.valid) {
-      alert(validation.error)
-      return
-    }
-    
-    if (selectedFeedback) {
-      const cleanComment = getCleanInput(newComment)
-      const updated = feedbacks.map(f => {
-        if (f._id === selectedFeedback._id) {
-          return {
-            ...f,
-            comments: [...f.comments, {
-              id: f.comments.length + 1,
-              author: user?.name || 'Anonymous',
-              text: cleanComment,
-              createdAt: new Date()
-            }]
-          }
-        }
-        return f
-      })
-      setFeedbacks(updated)
-      setSelectedFeedback(updated.find(f => f._id === selectedFeedback._id))
-      setNewComment('')
-    }
   }
 
   const handleAddFeedback = async () => {
@@ -160,58 +123,6 @@ const AdvancedFeedbackPage = () => {
     } catch (err) {
       console.error('Error adding feedback:', err)
       alert('Error adding feedback: ' + (err.response?.data?.message || err.message))
-    }
-  }
-
-  const handleUpdateStatus = async (feedbackId, newStatus) => {
-    try {
-      const response = await axios.patch(
-        `${API_BASE_URL}/feedback/${feedbackId}/status`,
-        { status: newStatus },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      )
-
-      if (response.data.success) {
-        setFeedbacks(feedbacks.map(f => f._id === feedbackId ? { ...f, status: newStatus } : f))
-        if (selectedFeedback?._id === feedbackId) {
-          setSelectedFeedback({ ...selectedFeedback, status: newStatus })
-        }
-        setSuccessMessage('Status updated successfully!')
-        setTimeout(() => setSuccessMessage(''), 3000)
-      }
-    } catch (err) {
-      console.error('Error updating status:', err)
-      alert('Error updating status: ' + (err.response?.data?.message || err.message))
-    }
-  }
-
-  const handleUpdatePriority = async (feedbackId, newPriority) => {
-    try {
-      const response = await axios.patch(
-        `${API_BASE_URL}/feedback/${feedbackId}/priority`,
-        { priority: newPriority },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      )
-
-      if (response.data.success) {
-        setFeedbacks(feedbacks.map(f => f._id === feedbackId ? { ...f, priority: newPriority } : f))
-        if (selectedFeedback?._id === feedbackId) {
-          setSelectedFeedback({ ...selectedFeedback, priority: newPriority })
-        }
-        setSuccessMessage('Priority updated successfully!')
-        setTimeout(() => setSuccessMessage(''), 3000)
-      }
-    } catch (err) {
-      console.error('Error updating priority:', err)
-      alert('Error updating priority: ' + (err.response?.data?.message || err.message))
     }
   }
 
@@ -306,8 +217,6 @@ const AdvancedFeedbackPage = () => {
   }
 
   const COLORS = ['#1e3a8a', '#FF8C00', '#10b981', '#f59e0b']
-  const PRIORITY_COLORS = { 'Low': '#10b981', 'High': '#ef4444' }
-  const STATUS_COLORS = { 'in-progress': '#f59e0b', 'resolved': '#10b981' }
 
   return (
     <div className="min-h-screen flex flex-col bg-dark-blue">
@@ -443,29 +352,6 @@ const AdvancedFeedbackPage = () => {
         {/* Analytics Section - Admin Only */}
         {user?.role === 'admin' && (
         <div className="grid md:grid-cols-2 gap-8 mb-12">
-          {/* Status Distribution */}
-          <div className="glass-effect p-6 rounded-xl">
-            <h3 className="text-lg font-bold mb-4">Feedback Status</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={statusDistribution}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}`}
-                >
-                  {statusDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#1e3a8a', border: 'none', borderRadius: '8px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-
           {/* Type Distribution */}
           <div className="glass-effect p-6 rounded-xl">
             <h3 className="text-lg font-bold mb-4">Feedback Type</h3>
@@ -542,17 +428,8 @@ const AdvancedFeedbackPage = () => {
                         <div className="text-xl">{'⭐'.repeat(feedback.rating)}</div>
                       </div>
                       <div className="flex gap-2 mt-2 flex-wrap">
-                        <span
-                          className="px-2 py-1 rounded text-xs font-medium"
-                          style={{ backgroundColor: PRIORITY_COLORS[feedback.priority] + '20', color: PRIORITY_COLORS[feedback.priority] }}
-                        >
-                          {feedback.priority}
-                        </span>
-                        <span
-                          className="px-2 py-1 rounded text-xs font-medium"
-                          style={{ backgroundColor: STATUS_COLORS[feedback.status] + '20', color: STATUS_COLORS[feedback.status] }}
-                        >
-                          {feedback.status}
+                        <span className="px-2 py-1 rounded text-xs font-medium text-gray-300 bg-white/10">
+                          {feedback.type}
                         </span>
                       </div>
                     </button>
@@ -591,7 +468,7 @@ const AdvancedFeedbackPage = () => {
             </div>
           </div>
 
-          {/* Feedback Details & Comments */}
+          {/* Feedback Details */}
           {selectedFeedback && (
             <div className="md:col-span-1 glass-effect p-6 rounded-xl h-fit sticky top-24">
               <h3 className="text-lg font-bold mb-4">Details</h3>
@@ -604,33 +481,6 @@ const AdvancedFeedbackPage = () => {
                   <span className="text-lg">{'⭐'.repeat(selectedFeedback.rating)}</span>
                 </div>
 
-                {/* Admin Controls */}
-                {user?.role === 'admin' && (
-                  <div className="space-y-3 pt-4 border-t border-white/20">
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-1">Status</label>
-                      <select
-                      value={selectedFeedback.status || 'in-progress'}
-                      onChange={(e) => handleUpdateStatus(selectedFeedback._id, e.target.value)}
-                      className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm"
-                    >
-                      <option value="in-progress">In Progress</option>
-                      <option value="resolved">Resolved</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-400 block mb-1">Priority</label>
-                      <select
-                        value={selectedFeedback.priority}
-                        onChange={(e) => handleUpdatePriority(selectedFeedback._id, e.target.value)}
-                        className="w-full bg-white/10 border border-white/20 rounded px-2 py-1 text-sm"
-                      >
-                        <option value="Low">Low</option>
-                        <option value="High">High</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
 
                 {/* User Edit/Delete (Owner Only) */}
                 {user?._id === selectedFeedback.userId?._id && (
@@ -651,41 +501,6 @@ const AdvancedFeedbackPage = () => {
                 )}
               </div>
 
-              {/* Comments Section */}
-              <div className="space-y-4">
-                <h4 className="font-semibold flex items-center gap-2">
-                  <MessageSquare size={18} /> Comments ({selectedFeedback.comments.length})
-                </h4>
-
-                {/* Existing Comments */}
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {selectedFeedback.comments?.map(comment => (
-                    <div key={comment._id} className="bg-white/5 p-3 rounded">
-                      <p className="text-sm font-medium text-accent">{comment.author || comment.userId?.name}</p>
-                      <p className="text-sm text-gray-300 mt-1">{comment.text}</p>
-                      <p className="text-xs text-gray-500 mt-1">{new Date(comment.createdAt).toLocaleDateString()}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add Comment */}
-                <div className="flex gap-2 pt-4 border-t border-white/20">
-                  <input
-                    type="text"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddComment()}
-                    placeholder="Add a comment..."
-                    className="flex-1 bg-white/10 border border-white/20 rounded px-3 py-2 text-sm outline-none focus:border-accent"
-                  />
-                  <button
-                    onClick={handleAddComment}
-                    className="bg-accent hover:bg-opacity-90 p-2 rounded transition"
-                  >
-                    <Send size={16} />
-                  </button>
-                </div>
-              </div>
             </div>
           )}
         </div>

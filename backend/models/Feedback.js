@@ -35,47 +35,7 @@ const feedbackSchema = new mongoose.Schema(
       index: true
     },
 
-    // ⚠️ Admin-related fields (read-only for users)
-    status: {
-      type: String,
-      enum: ['in-progress', 'resolved'],
-      default: 'in-progress'
-    },
-
-    response: {
-      type: String,
-      default: null
-    },
-
-    priority: {
-      type: String,
-      enum: ['Low', 'High'],
-      default: 'Low'
-    },
-
-    // 💬 Comments (optional feature)
-    comments: [
-      {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'User',
-          required: true
-        },
-        text: {
-          type: String,
-          required: true,
-          trim: true
-        },
-        author: {
-          type: String,
-          required: true
-        },
-        createdAt: {
-          type: Date,
-          default: Date.now
-        }
-      }
-    ]
+   
   },
   { timestamps: true }
 )

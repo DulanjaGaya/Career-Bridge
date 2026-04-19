@@ -3,7 +3,7 @@ import { Search, ChevronDown, ThumbsUp, Edit2, Trash2, Plus, TrendingUp, X, Aler
 import { useAuth } from '../context/AuthContext'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import axios from 'axios'
 import { validateFAQForm, getCleanInput } from '../utils/validations'
 
@@ -123,13 +123,14 @@ const FAQPage = () => {
 
   // Filter FAQs
   const filteredFAQs = useMemo(() => {
+    const lowerSearch = searchTerm.toLowerCase()
     return faqs.filter(faq => {
-      const matchesSearch = faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          faq.answer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          faq.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      const matchesSearch = faq.question?.toLowerCase().includes(lowerSearch) ||
+                          faq.answer?.toLowerCase().includes(lowerSearch) ||
+                          faq.tags?.some(tag => tag.toLowerCase().includes(lowerSearch))
       const matchesCategory = selectedCategory === 'all' || faq.category === selectedCategory
       return matchesSearch && matchesCategory
-    }).sort((a, b) => b.upvotes - a.upvotes)
+    }).sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0))
   }, [searchTerm, selectedCategory, faqs])
 
   // Analytics data
@@ -349,27 +350,6 @@ const FAQPage = () => {
         {/* Analytics Section - Admin Only */}
         {user?.role === 'admin' && (
         <div className="grid md:grid-cols-2 gap-8 mb-12">
-          {/* Views vs Upvotes Chart */}
-          <div className="glass-effect p-6 rounded-xl">
-            <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-              <TrendingUp size={20} className="text-accent" /> FAQ Engagement
-            </h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={viewsData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" />
-                <YAxis stroke="rgba(255,255,255,0.5)" />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1e3a8a', border: 'none', borderRadius: '8px' }}
-                  labelStyle={{ color: '#fff' }}
-                />
-                <Legend />
-                <Bar dataKey="views" fill="#1e3a8a" />
-                <Bar dataKey="upvotes" fill="#FF8C00" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
           {/* Category Distribution with Percentages */}
           <div className="glass-effect p-6 rounded-xl">
             <h3 className="text-lg font-bold mb-6">FAQs by Category</h3>
@@ -421,23 +401,50 @@ const FAQPage = () => {
             filteredFAQs.map(faq => (
               <div key={faq._id} className="glass-effect rounded-xl overflow-hidden">
                 {/* Header */}
-                <button
-                  onClick={() => setExpandedId(expandedId === faq._id ? null : faq._id)}
-                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition group"
-                >
-                  <div className="flex-1 text-left">
+                <div className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/5 transition group">
+                  <button
+                    onClick={() => setExpandedId(expandedId === faq._id ? null : faq._id)}
+                    className="flex-1 text-left"
+                  >
                     <h3 className="text-lg font-bold group-hover:text-accent transition">{faq.question}</h3>
                     <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
-                      <span>👁️ {faq.views} views</span>
-                      <span>📊 {faq.upvotes} upvotes</span>
-                      <span className="px-2 py-1 bg-accent/20 text-accent rounded text-xs">{faq.category}</span>
+                      <span>👁️ {faq.views ?? 0} views</span>
+                      <span>📊 {faq.upvotes ?? 0} upvotes</span>
+                      <span className="px-2 py-1 bg-accent/20 text-accent rounded text-xs">{faq.category ?? 'General'}</span>
                     </div>
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    {user?.role === 'admin' && (
+                      <>
+                        <button
+                          onClick={() => handleEditFAQ(faq)}
+                          className="p-2 rounded-lg text-accent hover:bg-blue-500/20 transition"
+                          title="Edit FAQ"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteFAQ(faq._id)}
+                          className="p-2 rounded-lg text-accent hover:bg-red-500/20 transition"
+                          title="Delete FAQ"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={() => setExpandedId(expandedId === faq._id ? null : faq._id)}
+                      className="p-2 rounded-lg text-accent hover:bg-white/10 transition"
+                      aria-label="Toggle FAQ details"
+                    >
+                      <ChevronDown
+                        size={24}
+                        className={`transition-transform ${expandedId === faq._id ? 'rotate-180' : ''}`}
+                      />
+                    </button>
                   </div>
-                  <ChevronDown
-                    size={24}
-                    className={`text-accent transition-transform ${expandedId === faq._id ? 'rotate-180' : ''}`}
-                  />
-                </button>
+                </div>
 
                 {/* Expanded Content */}
                 {expandedId === faq._id && (
@@ -445,16 +452,18 @@ const FAQPage = () => {
                     <p className="text-gray-300 mb-4 leading-relaxed">{faq.answer}</p>
 
                     {/* Tags */}
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {faq.tags.map(tag => (
-                        <span key={tag} className="px-3 py-1 bg-accent/20 text-accent rounded-full text-xs">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                    {faq.tags?.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {faq.tags.map(tag => (
+                          <span key={tag} className="px-3 py-1 bg-accent/20 text-accent rounded-full text-xs">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Actions */}
-                    <div className="flex items-center justify-between pt-4 border-t border-white/20">
+                    <div className="flex items-center justify-start gap-4 pt-4 border-t border-white/20">
                       <button
                         onClick={() => handleUpvote(faq._id)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
@@ -466,23 +475,6 @@ const FAQPage = () => {
                         <ThumbsUp size={18} />
                         Helpful ({faq.upvotes})
                       </button>
-
-                      {user?.role === 'admin' && (
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => handleEditFAQ(faq)}
-                            className="p-2 hover:bg-blue-500/20 rounded-lg transition text-gray-400 hover:text-blue-400"
-                          >
-                            <Edit2 size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteFAQ(faq._id)}
-                            className="p-2 hover:bg-red-500/20 rounded-lg transition text-gray-400 hover:text-red-400"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}

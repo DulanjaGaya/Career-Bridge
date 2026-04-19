@@ -287,14 +287,7 @@ exports.updateFeedbackPriority = async (req, res) => {
       });
     }
 
-    // Validate priority
-    const validPriorities = ['Low', 'Medium', 'High'];
-    if (!priority || !validPriorities.includes(priority)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid priority'
-      });
-    }
+    
 
     const feedback = await Feedback.findByIdAndUpdate(
       id,

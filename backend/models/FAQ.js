@@ -17,18 +17,8 @@ const FAQSchema = new mongoose.Schema({
     enum: ['General', 'Account', 'Employer', 'Support', 'Security'],
     default: 'General'
   },
-  upvotes: {
-    type: Number,
-    default: 0
-  },
-  views: {
-    type: Number,
-    default: 0
-  },
-  tags: [{
-    type: String,
-    trim: true
-  }],
+  
+ 
   createdAt: {
     type: Date,
     default: Date.now
