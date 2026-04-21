@@ -61,4 +61,6 @@ const questionSchema = new mongoose.Schema(
   { timestamps: true }
 )
 
-module.exports = mongoose.model('Question', questionSchema)
+// Persist questions into the 'UserQuestions' collection so user-submitted
+// questions appear under the requested collection in the database.
+module.exports = mongoose.model('Question', questionSchema, 'UserQuestions')
