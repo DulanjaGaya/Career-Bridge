@@ -37,6 +37,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/jobs', require('./routes/jobRoutes'));
 app.use('/api/students', require('./routes/studentRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 
 // Error handling middleware

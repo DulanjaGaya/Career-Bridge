@@ -3,6 +3,7 @@ const User = require('../models/user');
 const StudentJob = require('../models/studentJob');
 const path = require('path');
 const fs = require('fs');
+const { notifyEmployerAboutApplication } = require('../utils/notificationService');
 
 const normalizeStoredUploadPath = (storedPath) => {
   if (!storedPath) return null;
@@ -83,6 +84,16 @@ exports.applyForJob = async (req, res) => {
 
     // Increment applicationsCount on the job
     await Job.findByIdAndUpdate(jobId, { $inc: { applicationsCount: 1 } });
+
+    try {
+      await notifyEmployerAboutApplication({
+        job,
+        applicationId: record._id,
+        studentId,
+      });
+    } catch (notificationError) {
+      console.error('Failed to create application notification:', notificationError);
+    }
 
     return res.status(201).json({
       success: true,

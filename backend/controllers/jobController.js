@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Job = require('../models/job');
 const StudentJob = require('../models/studentJob');
+const { notifyStudentsAboutJob } = require('../utils/notificationService');
 
 const normalizeStoredUploadPath = (storedPath) => {
   if (!storedPath) return null;
@@ -36,6 +37,14 @@ exports.createJob = async (req, res) => {
 
     const job = new Job(jobData);
     await job.save();
+
+    if ((job.status || 'active') === 'active') {
+      try {
+        await notifyStudentsAboutJob(job, req.user.userId);
+      } catch (notificationError) {
+        console.error('Failed to create job notifications:', notificationError);
+      }
+    }
 
     res.status(201).json({
       success: true,
