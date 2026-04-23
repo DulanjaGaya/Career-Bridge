@@ -39,6 +39,7 @@ build/Release
 
 # Dependency directories
 node_modules/
+**/node_modules/
 jspm_packages/
 
 # TypeScript v1 declaration files
@@ -71,6 +72,8 @@ typings/
 # dotenv environment variables file
 .env
 .env.test
+**/.env
+!.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -81,6 +84,8 @@ typings/
 # Nuxt.js build / generate output
 .nuxt
 dist
+dist/
+build/
 
 # Gatsby files
 .cache/
@@ -119,3 +124,6 @@ Thumbs.db
 # ITPM / Prisma (SQLite local)
 *.db
 *.db-journal
+
+# Career-Bridge integrated (tooling)
+.cursor/

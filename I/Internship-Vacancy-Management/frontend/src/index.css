@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-dark-base text-slate-200;
+  }
+
+  input:not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    @apply bg-slate-50 border border-slate-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-slate-400 shadow-sm px-4 py-3;
+  }
+
+  option {
+    @apply bg-white text-gray-900;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors duration-200 font-medium;
+  }
+
+  .btn-secondary {
+    @apply bg-dark-card text-slate-200 border-2 border-slate-600 px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors duration-200 font-medium;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-slate-50 border border-slate-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all placeholder-slate-400 shadow-sm;
+  }
+
+  .card {
+    @apply bg-dark-card rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300;
+  }
+}
