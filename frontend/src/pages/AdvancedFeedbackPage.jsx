@@ -1,11 +1,13 @@
-import React, { useState, useMemo, useEffect } from 'react'
-import { Send, Star, Edit2, Trash2, Filter, TrendingUp, AlertCircle, X, CheckCircle } from 'lucide-react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
+import { Send, Star, Edit2, Trash2, Filter, TrendingUp, AlertCircle, X, CheckCircle, Search, Calendar, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { validateFeedbackForm, getCleanInput } from '../utils/validations'
 import axios from 'axios'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 /**
  * AdvancedFeedbackPage - Enhanced feedback with ratings, analytics, admin edit/delete
@@ -18,7 +20,21 @@ const AdvancedFeedbackPage = () => {
   const [error, setError] = useState(null)
   const [selectedFeedback, setSelectedFeedback] = useState(null)
   const [successMessage, setSuccessMessage] = useState('')
+  
+  // Advanced Filters State
   const [filterType, setFilterType] = useState('all')
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [fromDate, setFromDate] = useState('')
+  const [toDate, setToDate] = useState('')
+  const [ratingFilter, setRatingFilter] = useState('all')
+  const [sortOption, setSortOption] = useState('newest')
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalFeedbacks, setTotalFeedbacks] = useState(0)
+  const limit = 10
+
   const [showNewFeedbackForm, setShowNewFeedbackForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -33,37 +49,53 @@ const AdvancedFeedbackPage = () => {
   const [formErrors, setFormErrors] = useState({})
   const [editErrors, setEditErrors] = useState({})
 
-  // Fetch feedbacks from API on mount
-  useEffect(() => {
-    const fetchFeedbacks = async () => {
-      try {
-        setLoading(true)
-        const response = await axios.get(`${API_BASE_URL}/feedback`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-        if (response.data.success) {
-          setFeedbacks(response.data.data || [])
-          setError(null)
-        }
-      } catch (err) {
-        console.error('Error fetching feedbacks:', err)
-        setError('Failed to load feedbacks')
-      } finally {
-        setLoading(false)
+  // Fetch feedbacks from API
+  const fetchFeedbacks = useCallback(async () => {
+    try {
+      setLoading(true)
+      const params = {
+        page: currentPage,
+        limit,
+        type: filterType,
+        search: searchKeyword,
+        fromDate,
+        toDate,
+        rating: ratingFilter,
+        sort: sortOption
       }
+      
+      const response = await axios.get(`${API_BASE_URL}/feedback`, {
+        params,
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      
+      if (response.data.success) {
+        setFeedbacks(response.data.data || [])
+        setTotalPages(response.data.pages || 1)
+        setTotalFeedbacks(response.data.total || 0)
+        setError(null)
+      }
+    } catch (err) {
+      console.error('Error fetching feedbacks:', err)
+      setError('Failed to load feedbacks')
+    } finally {
+      setLoading(false)
     }
-    fetchFeedbacks()
-  }, [])
+  }, [currentPage, filterType, searchKeyword, fromDate, toDate, ratingFilter, sortOption])
 
-  // Filter feedbacks
-  const filteredFeedbacks = useMemo(() => {
-    return feedbacks.filter(f => {
-      const typeMatch = filterType === 'all' || f.type === filterType
-      return typeMatch
-    })
-  }, [feedbacks, filterType])
+  useEffect(() => {
+    fetchFeedbacks()
+  }, [fetchFeedbacks])
+
+  // Clear pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filterType, searchKeyword, fromDate, toDate, ratingFilter, sortOption])
+
+  // Note: Filtering is now handled on the backend via fetchFeedbacks.
+  // We use the 'feedbacks' state directly which contains the paginated/filtered data.
 
   // Analytics data
   const typeDistribution = [
@@ -194,16 +226,10 @@ const AdvancedFeedbackPage = () => {
       )
 
       if (response.data.success) {
-        const updatedFeedbacks = feedbacks.filter(f => f._id !== feedbackId)
-        setFeedbacks(updatedFeedbacks)
+        // Refresh the current page
+        fetchFeedbacks()
         setShowDeleteConfirm(false)
-        
-        // Auto-select next feedback if available
-        if (updatedFeedbacks.length > 0) {
-          setSelectedFeedback(updatedFeedbacks[0])
-        } else {
-          setSelectedFeedback(null)
-        }
+        setSelectedFeedback(null)
         
         setSuccessMessage('Feedback deleted successfully!')
         // Clear success message after 3 seconds
@@ -214,6 +240,67 @@ const AdvancedFeedbackPage = () => {
       const errorMsg = err.response?.data?.message || err.message || 'Failed to delete feedback'
       alert('Error deleting feedback: ' + errorMsg)
     }
+  }
+
+  // 🔹 EXPORT CSV
+  const handleExportCSV = () => {
+    if (feedbacks.length === 0) return alert('No data to export')
+
+    const headers = ['Title/Message', 'Username', 'Type', 'Rating', 'Date']
+    const csvData = feedbacks.map(f => [
+      `"${f.message.replace(/"/g, '""')}"`,
+      `"${f.userId?.name || 'Anonymous'}"`,
+      f.type,
+      f.rating,
+      new Date(f.createdAt).toLocaleDateString()
+    ])
+
+    const csvContent = [headers, ...csvData].map(e => e.join(',')).join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    
+    link.setAttribute('href', url)
+    link.setAttribute('download', `feedback_export_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // 🔹 EXPORT PDF
+  const handleExportPDF = () => {
+    if (feedbacks.length === 0) return alert('No data to export')
+
+    const doc = new jsPDF()
+    doc.setFontSize(18)
+    doc.text('Feedback Report', 14, 22)
+    doc.setFontSize(11)
+    doc.setTextColor(100)
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30)
+
+    const tableColumn = ["Message", "User", "Type", "Rating", "Date"]
+    const tableRows = feedbacks.map(f => [
+      f.message,
+      f.userId?.name || 'Anonymous',
+      f.type,
+      f.rating,
+      new Date(f.createdAt).toLocaleDateString()
+    ])
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 35,
+      theme: 'striped',
+      headStyles: { fillColor: [30, 58, 138] }, // dark-blue
+      styles: { fontSize: 9, cellPadding: 3 },
+      columnStyles: {
+        0: { cellWidth: 80 },
+      }
+    })
+
+    doc.save(`feedback_report_${new Date().toISOString().split('T')[0]}.pdf`)
   }
 
   const COLORS = ['#1e3a8a', '#FF8C00', '#10b981', '#f59e0b']
@@ -387,29 +474,148 @@ const AdvancedFeedbackPage = () => {
         </div>
         )}
 
-        {/* Filters */}
-        <div className="mb-8">
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-lg px-4 py-2 outline-none focus:border-accent"
-          >
-            <option value="all" className="bg-primary">All Types</option>
-            <option value="Bug" className="bg-primary">Bug</option>
-            <option value="Feature Request" className="bg-primary">Feature Request</option>
-            <option value="UX" className="bg-primary">UX/Design</option>
-            <option value="Other" className="bg-primary">Other</option>
-          </select>
+        {/* Advanced Filters + Export Section */}
+        <div className="glass-effect p-6 rounded-xl mb-8 space-y-6">
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <Filter size={20} /> Filters & Search
+            </h3>
+            
+            {/* Export Buttons - Admin Only */}
+            {user?.role === 'admin' && (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleExportCSV}
+                  className="flex items-center gap-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 px-4 py-2 rounded-lg border border-blue-500/30 transition text-sm font-medium"
+                >
+                  <Download size={16} /> Export CSV
+                </button>
+                <button
+                  onClick={handleExportPDF}
+                  className="flex items-center gap-2 bg-red-600/20 hover:bg-red-600/30 text-red-300 px-4 py-2 rounded-lg border border-red-500/30 transition text-sm font-medium"
+                >
+                  <Download size={16} /> Export PDF
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Keyword Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Search feedback..."
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-2 outline-none focus:border-accent"
+              />
+            </div>
+
+            {/* Type Filter */}
+            <div>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 outline-none focus:border-accent text-white"
+              >
+                <option value="all" className="bg-primary">All Types</option>
+                <option value="Bug" className="bg-primary">Bug</option>
+                <option value="Feature Request" className="bg-primary">Feature Request</option>
+                <option value="UX" className="bg-primary">UX/Design</option>
+                <option value="Other" className="bg-primary">Other</option>
+              </select>
+            </div>
+
+            {/* Rating Filter */}
+            <div>
+              <select
+                value={ratingFilter}
+                onChange={(e) => setRatingFilter(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 outline-none focus:border-accent text-white"
+              >
+                <option value="all" className="bg-primary">All Ratings</option>
+                <option value="5" className="bg-primary">⭐⭐⭐⭐⭐ (5)</option>
+                <option value="4" className="bg-primary">⭐⭐⭐⭐ (4)</option>
+                <option value="3" className="bg-primary">⭐⭐⭐ (3)</option>
+                <option value="2" className="bg-primary">⭐⭐ (2)</option>
+                <option value="1" className="bg-primary">⭐ (1)</option>
+              </select>
+            </div>
+
+            {/* Sort Options */}
+            <div>
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 outline-none focus:border-accent text-white"
+              >
+                <option value="newest" className="bg-primary">Newest First</option>
+                <option value="oldest" className="bg-primary">Oldest First</option>
+                <option value="highest_rating" className="bg-primary">Highest Rating</option>
+                <option value="lowest_rating" className="bg-primary">Lowest Rating</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-white/10 pt-4">
+            {/* Date Range */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-2 outline-none focus:border-accent text-white text-sm"
+                  title="From Date"
+                />
+              </div>
+              <span className="text-gray-500">to</span>
+              <div className="flex-1 relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-2 outline-none focus:border-accent text-white text-sm"
+                  title="To Date"
+                />
+              </div>
+              {(fromDate || toDate || searchKeyword !== '' || filterType !== 'all' || ratingFilter !== 'all') && (
+                <button
+                  onClick={() => {
+                    setFromDate('')
+                    setToDate('')
+                    setSearchKeyword('')
+                    setFilterType('all')
+                    setRatingFilter('all')
+                    setSortOption('newest')
+                  }}
+                  className="text-xs text-accent hover:underline px-2"
+                >
+                  Reset All
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Feedbacks List */}
         <div className="grid md:grid-cols-3 gap-8">
           {/* Feedback Items */}
           <div className="md:col-span-2">
-            <h3 className="text-xl font-bold mb-4">Feedback ({filteredFeedbacks.length})</h3>
-            <div className="space-y-4">
-              {filteredFeedbacks.length > 0 ? (
-                filteredFeedbacks.map(feedback => (
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold">Feedback ({totalFeedbacks})</h3>
+              <div className="text-sm text-gray-400">
+                Page {currentPage} of {totalPages}
+              </div>
+            </div>
+            
+            <div className="space-y-4 mb-8">
+              {feedbacks.length > 0 ? (
+                feedbacks.map(feedback => (
                   <div
                     key={feedback._id}
                     className={`glass-effect rounded-lg hover:bg-white/10 transition ${
@@ -423,12 +629,17 @@ const AdvancedFeedbackPage = () => {
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <p className="font-semibold line-clamp-1">{feedback.message}</p>
-                          <p className="text-sm text-gray-400">{feedback.userId?.name || 'Anonymous'} • {feedback.type}</p>
+                          <p className="text-sm text-gray-400">{feedback.userId?.name || 'Anonymous'} • {feedback.type} • {new Date(feedback.createdAt).toLocaleDateString()}</p>
                         </div>
                         <div className="text-xl">{'⭐'.repeat(feedback.rating)}</div>
                       </div>
                       <div className="flex gap-2 mt-2 flex-wrap">
-                        <span className="px-2 py-1 rounded text-xs font-medium text-gray-300 bg-white/10">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          feedback.type === 'Bug' ? 'bg-red-500/20 text-red-300' :
+                          feedback.type === 'Feature Request' ? 'bg-blue-500/20 text-blue-300' :
+                          feedback.type === 'UX' ? 'bg-purple-500/20 text-purple-300' :
+                          'bg-white/10 text-gray-300'
+                        }`}>
                           {feedback.type}
                         </span>
                       </div>
@@ -461,11 +672,50 @@ const AdvancedFeedbackPage = () => {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-12 glass-effect rounded-xl text-gray-400">
                   <p>No feedback matching filters</p>
                 </div>
               )}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 py-4">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                  title="Previous Page"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                
+                <div className="flex items-center gap-2">
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`w-10 h-10 rounded-lg transition ${
+                        currentPage === i + 1 
+                          ? 'bg-accent text-white font-bold' 
+                          : 'bg-white/5 hover:bg-white/10 text-gray-400'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                  title="Next Page"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Feedback Details */}

@@ -5,17 +5,78 @@
 
 const Feedback = require('../models/Feedback')
 
-// 🔹 GET FEEDBACK (Everyone → all feedbacks, edit/delete restricted on frontend & backend)
+// 🔹 GET FEEDBACK (Everyone → all feedbacks, supports filters, sorting, and pagination)
 exports.getFeedback = async (req, res) => {
   try {
-    // Everyone gets ALL feedback (visibility only, edit/delete checked by ownership)
-    const feedback = await Feedback.find()
+    const { 
+      search, 
+      type, 
+      rating, 
+      fromDate, 
+      toDate, 
+      sort, 
+      page = 1, 
+      limit = 10 
+    } = req.query;
+
+    // Build Query
+    let query = {};
+
+    // Keyword Search (on message)
+    if (search) {
+      query.message = { $regex: search, $options: 'i' };
+    }
+
+    // Type Filter
+    if (type && type !== 'all') {
+      query.type = type;
+    }
+
+    // Rating Filter
+    if (rating && rating !== 'all') {
+      query.rating = Number(rating);
+    }
+
+    // Date Range Filter
+    if (fromDate || toDate) {
+      query.createdAt = {};
+      if (fromDate) {
+        query.createdAt.$gte = new Date(fromDate);
+      }
+      if (toDate) {
+        const endOfToDate = new Date(toDate);
+        endOfToDate.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = endOfToDate;
+      }
+    }
+
+    // Sorting
+    let sortOptions = { createdAt: -1 }; // Default: Newest first
+    if (sort === 'oldest') {
+      sortOptions = { createdAt: 1 };
+    } else if (sort === 'highest_rating') {
+      sortOptions = { rating: -1, createdAt: -1 };
+    } else if (sort === 'lowest_rating') {
+      sortOptions = { rating: 1, createdAt: -1 };
+    }
+
+    // Pagination
+    const skip = (Number(page) - 1) * Number(limit);
+    const total = await Feedback.countDocuments(query);
+    const totalPages = Math.ceil(total / Number(limit));
+
+    const feedback = await Feedback.find(query)
       .populate('userId', 'name email')
-      .sort({ createdAt: -1 });
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(Number(limit));
 
     res.status(200).json({
       success: true,
       count: feedback.length,
+      total,
+      pages: totalPages,
+      currentPage: Number(page),
       data: feedback
     });
 
