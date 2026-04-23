@@ -1,5 +1,5 @@
 const Job = require('../models/job');
-const User = require('../models/user');
+const User = require('../models/User');
 const StudentJob = require('../models/studentJob');
 const path = require('path');
 const fs = require('fs');

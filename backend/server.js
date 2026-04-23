@@ -26,7 +26,27 @@ const connectDB = async () => {
 connectDB();
 
 // Middleware
-app.use(cors());
+const corsOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow non-browser clients (curl/postman) with no Origin header
+    if (!origin) return callback(null, true);
+    if (corsOrigins.length === 0) return callback(null, true);
+    return callback(null, corsOrigins.includes(origin));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+
+// Ensure preflight requests are answered (Express 5 doesn't accept '*')
+app.options(/.*/, cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
