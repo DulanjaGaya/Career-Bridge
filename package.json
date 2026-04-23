@@ -1,16 +1,15 @@
 {
-  "name": "career-readiness-platform",
+  "name": "career-bridge-integrated",
   "private": true,
-  "workspaces": [
-    "client",
-    "server"
-  ],
+  "version": "1.0.0",
   "scripts": {
-    "dev": "concurrently -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
-    "db:push": "npm run db:push -w server",
-    "db:studio": "npm run db:studio -w server"
+    "dev": "concurrently -n main,gateway,m-back,m-front,i-back,i-front,t-back,t-front,d-back,d-front -c cyan,magenta,green,green,yellow,yellow,blue,blue,red,red \"npm run dev --prefix frontend/main-app\" \"npm run dev --prefix backend/api-gateway\" \"npm run dev --prefix M/career/Career-Bridge/backend\" \"npm run dev --prefix M/career/Career-Bridge/frontend\" \"npm run dev --prefix I/Internship-Vacancy-Management/backend\" \"npm run dev --prefix I/Internship-Vacancy-Management/frontend\" \"npm run dev --prefix T/backend\" \"npm run dev --prefix T/frontend\" \"npm run dev --prefix D/Career-Bridge/backend\" \"npm run dev --prefix D/Career-Bridge/frontend\"",
+    "dev:shell": "npm run dev --prefix frontend/shell",
+    "dev:main-app": "npm run dev --prefix frontend/main-app",
+    "dev:gateway": "npm run dev --prefix backend/api-gateway",
+    "install:all": "npm install && npm install --prefix frontend/main-app && npm install --prefix backend/api-gateway && npm install --prefix M/career/Career-Bridge/backend && npm install --prefix M/career/Career-Bridge/frontend && npm install --prefix I/Internship-Vacancy-Management/backend && npm install --prefix I/Internship-Vacancy-Management/frontend && npm install --prefix T/backend && npm install --prefix T/frontend && npm install --prefix D/Career-Bridge/backend && npm install --prefix D/Career-Bridge/frontend"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.2.1"
   }
 }

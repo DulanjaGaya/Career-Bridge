@@ -1,151 +1,52 @@
-# Career Bridge
+# Career Bridge Integrated (T / I / D / M)
 
-This repository contains multiple full-stack apps developed in collaboration.
+This workspace keeps each member module separate and adds one website entry point.
 
----
+## Folder Order
 
-## App A — Interview practice (`frontend/` + `backend/`)
+- `M/` - Login/Auth, User Management, Q&A, Feedback
+- `I/` - Internship Posting, Smart Filter/Search
+- `T/` - CV/Resume Builder, Dashboard Progress
+- `D/` - Mock Interview Lobby, Resource Tracker
+- `frontend/shell/` - single UI launcher for all modules
+- `backend/api-gateway/` - single API gateway (optional, scaffolded)
 
-Full-stack interview practice platform built with React, Vite, Tailwind CSS, Express, and MongoDB:
+## Ports (pre-set)
 
-- Real-time mock interview lobbies with timed multiple-choice questions and live scoring
-- Personal resource tracker with progress history, ratings, PDF resource submission, and downloadable progress reports
+- M frontend: `5174`, backend: `5001`
+- I frontend: `5175`, backend: `5002`
+- T frontend: `5176`, backend: `5003`
+- D frontend: `5177`, backend: `5004`
+- Shell frontend: `5173`
+- Gateway backend: `5050`
 
-### Features
+## Baby-Step Run Guide
 
-- JWT-based user registration and login
-- Protected frontend routes and authenticated API requests
-- Mock interview lobbies with host controls, participant tracking, timed questions, and a live scoreboard
-- Topic-based question retrieval from MongoDB
-- Resource tracking with filters, search, completion toggling, and topic summaries
-- Feedback and rating system for learning resources
-- Completion timeline view for each user
-- PDF resource link submission from the UI
-- Downloadable PDF completion report generated on the backend
-- Seed script for sample questions and resources
+1. Open terminal at project root.
+2. Install shell dependencies: `npm install --prefix frontend/shell`
+3. Start shell: `npm run dev --prefix frontend/shell`
+4. In separate terminals, start each module frontend and backend (see `install:all` in `package.json` for paths).
+5. Open `http://localhost:5173` and choose `M`, `I`, `T`, or `D`.
 
-### Tech stack (App A)
+## Phase 3 (Single Native App Foundation)
 
-| | |
-| --- | --- |
-| Frontend | React 19, Vite, Tailwind CSS, React Router, Axios, Framer Motion |
-| Backend | Node.js, Express, MongoDB (Mongoose), JWT, bcryptjs, PDFKit |
+`frontend/main-app` is the unified app:
 
-### Project structure (App A)
+1. `npm install --prefix frontend/main-app`
+2. `npm run dev --prefix frontend/main-app`
+3. Open `http://localhost:5180`
 
-```text
-.
-|-- backend/
-|   |-- config/
-|   |-- controllers/
-|   |-- middleware/
-|   |-- models/
-|   |-- routes/
-|   |-- seed/
-|   |-- utils/
-|   `-- server.js
-|-- frontend/
-|   |-- public/
-|   |-- src/
-|   `-- vite.config.js
-```
+## One Command Startup
 
-### Prerequisites (App A)
+1. First-time only: `npm run install:all`
+2. Every time: `npm run dev`
+3. Open `http://localhost:5180`
 
-- Node.js 18+
-- npm
-- MongoDB running locally or a connection string
+## Database
 
-### Environment (App A)
-
-Create `backend/.env` from `backend/.env.example`:
-
-```env
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/interview_prep
-JWT_SECRET=add_your_secret_here
-NODE_ENV=development
-```
-
-### Run App A locally
-
-```bash
-cd backend && npm install && npm run dev
-```
-
-```bash
-cd frontend && npm install && npm run dev
-```
-
-Open [http://localhost:5173](http://localhost:5173). The Vite dev server proxies `/api` to `http://localhost:5000`.
-
-### Seed (App A)
-
-```bash
-cd backend
-node seed/seeder.js
-```
-
-Delete seeded data: `node seed/seeder.js -d`
-
----
-
-## App B — Career readiness / résumé + dashboard (`client/` + `server/`)
-
-Full-stack demo aligned with **React**, **Node.js (Express)**, and **SQL** via **Prisma** (SQLite locally; PostgreSQL-ready).
-
-### Features (App B)
-
-| Area | What is implemented |
-| --- | --- |
-| **Résumé builder** | Guided sections, client-side validation (Zod + React Hook Form), PDF (jsPDF) & Word (docx) export |
-| **Dummy data** | “Load demo CV” on the home page |
-| **AI / NLP (demo)** | `POST /api/suggestions/achievement` — rule-based phrasing helper |
-| **Dashboard** | Readiness score, Chart.js charts, milestone progress, task CRUD, notifications |
-| **Real-time** | Socket.IO — notifications to the signed-in user’s room |
-| **Automation** | node-cron — daily due-soon reminders + overdue alerts |
-
-### Prerequisites (App B)
-
-- **Node.js 20+** (LTS recommended)
-- npm
-
-### Setup (App B)
-
-```bash
-npm install
-cd server
-npx prisma generate
-npx prisma db push
-cd ..
-npm run dev
-```
-
-- **API + WebSocket:** [http://localhost:4000](http://localhost:4000) (`/api/health`)
-- **React app:** [http://localhost:5173](http://localhost:5173) — *note:* conflicts with App A’s Vite port if both run; use one stack at a time or change ports in config.
-
-Create `server/.env` from `server/.env.example` for database URL and secrets.
-
-### PostgreSQL (optional, App B)
-
-Set `DATABASE_URL` in `server/.env`, switch `provider` in `server/prisma/schema.prisma` to `postgresql`, then `npx prisma db push`.
-
-### Project structure (App B)
-
-- `client/` — React (Vite) SPA  
-- `server/` — Express API, Prisma, cron, Socket.IO  
-
-### Scripts (App B)
-
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Runs API + client together (from repo root) |
-| `npm run db:push` | Applies Prisma schema |
-| `npm run db:studio` | Prisma Studio |
-
----
+See `DATABASE_SETUP.md`.
 
 ## Notes
 
-- **App A** auth tokens are stored in local storage; several routes require a Bearer token.
-- **App B** is a separate module in this monorepo; coordinate ports and env files when running both.
+- Member folders stay separate; integration is additive.
+- If any module needs `.env`, keep that file inside that module only.
