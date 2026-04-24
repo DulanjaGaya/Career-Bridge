@@ -5,7 +5,7 @@
 body {
   margin: 0;
   font-family: Inter, Arial, sans-serif;
-  background: radial-gradient(circle at 50% 10%, #1f2436 0%, #0a1020 45%, #070d19 100%);
+  background: radial-gradient(circle at 50% 5%, #1e2436 0%, #081027 45%, #030914 100%);
   color: #f8fafc;
 }
 
@@ -19,19 +19,45 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(6, 11, 23, 0.9);
+  background: rgba(3, 10, 26, 0.96);
   backdrop-filter: blur(6px);
-  border-bottom: 1px solid #1e293b;
-  padding: 14px 18px;
+  border-bottom: 1px solid #1c2b46;
+}
+
+.topbar-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .brand {
   color: #f8fafc;
   text-decoration: none;
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
-  display: inline-block;
-  margin-bottom: 10px;
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.main-link {
+  color: #cbd5e1;
+  text-decoration: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.main-link.active,
+.main-link:hover {
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.1);
 }
 
 .nav {
@@ -57,9 +83,9 @@ body {
 }
 
 .container {
-  max-width: 1100px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 34px 20px 20px;
   width: 100%;
   flex: 1;
 }
@@ -72,9 +98,9 @@ body {
 }
 
 .hero h1 {
-  font-size: 54px;
+  font-size: 70px;
   line-height: 1.06;
-  margin: 8px 0 14px;
+  margin: 12px 0 14px;
 }
 
 .hero h1 span {
@@ -82,8 +108,24 @@ body {
 }
 
 .hero-sub {
-  max-width: 760px;
+  max-width: 700px;
   color: #b8c5d8;
+  font-size: 22px;
+  line-height: 1.4;
+}
+
+.hero-actions {
+  margin-top: 24px;
+  display: flex;
+  gap: 12px;
+}
+
+.module-panel {
+  margin-top: 30px;
+}
+
+.module-panel p {
+  color: #9fb1c8;
 }
 
 .badge {
@@ -159,10 +201,15 @@ body {
   padding: 10px 14px;
   border: 1px solid #c2410c;
   background: #f97316;
-  color: #0f172a;
+  color: #fff;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
+}
+
+.btn.nav-cta {
+  min-width: 130px;
+  text-align: center;
 }
 
 .btn:disabled {
@@ -201,11 +248,25 @@ body {
 }
 
 .footer-inner {
-  max-width: 1100px;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 12px 20px;
   display: flex;
   justify-content: space-between;
   color: #94a3b8;
   font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .topbar-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .hero h1 {
+    font-size: 48px;
+  }
+  .hero-sub {
+    font-size: 18px;
+  }
 }
