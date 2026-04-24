@@ -4,10 +4,9 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useAuth } from './hooks/useAuth';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import EmployerRegister from './pages/auth/EmployerRegister';
-import StudentRegister from './pages/auth/StudentRegister';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 import BrowseJobs from './pages/student/BrowseJobs';
 import JobDetailsPage from './pages/student/JobDetailsPage';
 import StudentDashboardPage from './pages/student/StudentDashboardPage';
@@ -22,6 +21,18 @@ import MyJobsPage from './pages/employer/MyJobs';
 import FeedbackPage from './pages/FeedbackPage';
 import EnhancedQAPage from './pages/EnhancedQAPage';
 import FAQPage from './pages/FAQPage';
+
+const getDashboardPath = (role) => {
+  if (role === 'employer') {
+    return '/employer/dashboard';
+  }
+
+  if (role === 'student') {
+    return '/student/dashboard';
+  }
+
+  return '/browse-jobs';
+};
 
 const App = () => {
   const { user, isLoading } = useAuth();
@@ -39,11 +50,12 @@ const App = () => {
       <Navbar />
       <main className="flex-1">
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={user ? <Navigate to="/browse-jobs" replace /> : <Login />} />
-          <Route path="/register" element={user ? <Navigate to="/browse-jobs" replace /> : <EmployerRegister />} />
-          <Route path="/register/student" element={user ? <Navigate to="/browse-jobs" replace /> : <StudentRegister />} />
-          <Route path="/register/employer" element={user ? <Navigate to="/browse-jobs" replace /> : <EmployerRegister />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={user ? <Navigate to={getDashboardPath(user.role)} replace /> : <LoginPage />} />
+          <Route path="/signup" element={user ? <Navigate to={getDashboardPath(user.role)} replace /> : <SignupPage />} />
+          <Route path="/register" element={<Navigate to="/signup" replace />} />
+          <Route path="/register/student" element={<Navigate to="/signup" replace />} />
+          <Route path="/register/employer" element={<Navigate to="/signup" replace />} />
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/qa" element={user ? <EnhancedQAPage /> : <Navigate to="/login" replace />} />
           <Route path="/feedback" element={user ? <FeedbackPage /> : <Navigate to="/login" replace />} />

@@ -1,5 +1,4 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
@@ -52,7 +51,7 @@ const registerUser = async (req, res, role, extraFields = {}) => {
   const user = await User.create({
     name,
     email,
-    password: await bcrypt.hash(password, 10),
+    password,
     role,
     ...extraFields,
   });

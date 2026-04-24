@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { Send, CheckCircle, AlertCircle, Trash2, Edit } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
+import api from '../services/api'
 
 const FeedbackPage = () => {
-  const { user, token } = useAuth()
+  const { user } = useAuth()
   const [feedbackList, setFeedbackList] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -18,12 +17,7 @@ const FeedbackPage = () => {
 
   const fetchFeedback = async () => {
     try {
-      const response = await fetch('/api/feedback', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-      const data = await response.json()
+      const { data } = await api.get('/feedback')
       setFeedbackList(data.data || [])
     } catch (error) {
       console.error('Failed to fetch feedback:', error)
@@ -58,22 +52,11 @@ const FeedbackPage = () => {
     }
 
     try {
-      const url = editingId
-        ? `/api/feedback/${editingId}`
-        : '/api/feedback'
+      const request = editingId
+        ? api.patch(`/feedback/${editingId}`, formData)
+        : api.post('/feedback', formData)
 
-      const method = editingId ? 'PATCH' : 'POST'
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      })
-
-      if (!response.ok) throw new Error('Failed to submit')
+      const { data } = await request
 
       setMessage({
         type: 'success',
@@ -82,10 +65,11 @@ const FeedbackPage = () => {
 
       setFormData({ message: '', rating: 0, type: 'Other' })
       setEditingId(null)
+      setFeedbackList(data.data ? [data.data, ...feedbackList.filter((item) => item._id !== data.data._id)] : feedbackList)
       fetchFeedback()
 
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      setMessage({ type: 'error', text: error.response?.data?.message || error.message })
     }
   }
 
@@ -98,28 +82,18 @@ const FeedbackPage = () => {
     if (!window.confirm('Are you sure?')) return
 
     try {
-      const response = await fetch(`/api/feedback/${feedbackId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-
-      if (!response.ok) throw new Error('Failed to delete')
+      await api.delete(`/feedback/${feedbackId}`)
 
       setMessage({ type: 'success', text: 'Feedback deleted!' })
       fetchFeedback()
     } catch (error) {
-      setMessage({ type: 'error', text: error.message })
+      setMessage({ type: 'error', text: error.response?.data?.message || error.message })
     }
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-dark-blue">
-      <Navbar />
-
-      <div className="flex-1 px-6 py-12">
-        <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen px-6 py-12 bg-dark-blue">
+      <div className="max-w-4xl mx-auto">
 
           {/* Header */}
           <div className="mb-8">
@@ -242,9 +216,6 @@ const FeedbackPage = () => {
           )}
 
         </div>
-      </div>
-
-      <Footer />
     </div>
   )
 }

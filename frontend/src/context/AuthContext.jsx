@@ -17,10 +17,17 @@ export const AuthProvider = ({ children }) => {
     setIsLoading(false);
   }, []);
 
-  const login = async (credentials, role = 'student') => {
+  const login = async (credentialsOrEmail, passwordOrRole, maybeRole) => {
+    const credentials = typeof credentialsOrEmail === 'object' && credentialsOrEmail !== null
+      ? credentialsOrEmail
+      : { email: credentialsOrEmail, password: passwordOrRole };
+    const role = typeof credentialsOrEmail === 'object' && credentialsOrEmail !== null
+      ? (passwordOrRole || 'student')
+      : (maybeRole || 'student');
+
     const data = role === 'employer'
       ? await authService.loginEmployer(credentials)
-      : await authService.loginStudent(credentials);
+      : await authService.login(credentials);
     setUser(data.user);
     queryClient.clear();
     return data;
@@ -30,6 +37,13 @@ export const AuthProvider = ({ children }) => {
     const data = role === 'employer'
       ? await authService.registerEmployer(userData)
       : await authService.registerStudent(userData);
+    setUser(data.user);
+    queryClient.clear();
+    return data;
+  };
+
+  const signup = async (userData) => {
+    const data = await authService.signup(userData);
     setUser(data.user);
     queryClient.clear();
     return data;
@@ -45,7 +59,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, loading: isLoading, login, register, registerStudent, registerEmployer, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, loading: isLoading, login, signup, register, registerStudent, registerEmployer, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,8 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { Search, ChevronDown, ThumbsUp, Edit2, Trash2, Plus, TrendingUp, X, AlertCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import axios from 'axios'
 import { validateFAQForm, getCleanInput } from '../utils/validations'
@@ -282,10 +280,8 @@ const FAQPage = () => {
   const COLORS = ['#1e3a8a', '#FF8C00', '#3b82f6', '#10b981', '#f59e0b']
 
   return (
-    <div className="min-h-screen flex flex-col bg-dark-blue">
-      <Navbar />
-
-      <div className="flex-1 px-6 py-12 max-w-7xl mx-auto w-full">
+    <div className="min-h-screen px-6 py-12 bg-dark-blue">
+      <div className="max-w-7xl mx-auto w-full">
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-5xl font-bold mb-4">Frequently Asked Questions</h1>
@@ -592,7 +588,6 @@ const FAQPage = () => {
                   setEditingFAQ(null)
                   setEditErrors({})
                 }}
-                className="hover:bg-white/10 p-2 rounded-lg transition"
               >
                 <X size={20} />
               </button>
@@ -685,7 +680,6 @@ const FAQPage = () => {
         </div>
       )}
 
-      <Footer />
     </div>
   )
 }

@@ -25,9 +25,22 @@ const CTASection = () => {
             Start Your Journey
             <ArrowRight size={20} className="group-hover:translate-x-1 transition" />
           </Link>
-          <button className="border-2 border-accent text-accent px-10 py-4 rounded-lg font-bold text-lg hover:bg-accent/10 transition">
+          <Link
+            to="/faq"
+            className="border-2 border-accent text-accent px-10 py-4 rounded-lg font-bold text-lg hover:bg-accent/10 transition text-center"
+          >
             Learn More
-          </button>
+          </Link>
+        </div>
+
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4 text-sm text-gray-300">
+          <Link to="/qa" className="hover:text-white transition">
+            Ask the community in Q&A
+          </Link>
+          <span className="hidden sm:inline text-gray-500">|</span>
+          <Link to="/feedback" className="hover:text-white transition">
+            Send feedback to the team
+          </Link>
         </div>
       </div>
     </section>

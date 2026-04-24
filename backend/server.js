@@ -8,6 +8,9 @@ const authRoutes = require('./routes/authRoutes');
 const jobRoutes = require('./routes/jobRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const faqRoutes = require('./routes/faqRoutes');
+const feedbackRoutes = require('./routes/feedbackRoutes');
+const questionRoutes = require('./routes/questionRoutes');
 
 connectDB();
 
@@ -22,6 +25,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/faqs', faqRoutes);
+app.use('/api/feedback', feedbackRoutes);
+app.use('/api/questions', questionRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ message: 'Career Bridge API is running' });

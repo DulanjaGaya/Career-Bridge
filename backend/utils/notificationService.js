@@ -1,5 +1,5 @@
 const Notification = require('../models/notification');
-const User = require('../models/user');
+const User = require('../models/User');
 
 const notifyStudentsAboutJob = async (job, senderId) => {
   const students = await User.find({ role: 'student' }).select('_id').lean();

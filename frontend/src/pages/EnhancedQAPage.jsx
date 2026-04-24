@@ -2,8 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, CheckCircle, Trash2, Pin, PinOff, Edit2, MessageSquare, TrendingUp, AlertCircle, Send } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { validateOfficialAnswerSubmission, validateQAForm, getCleanInput } from '../utils/validations'
 import api from '../api/axios'
@@ -14,7 +12,7 @@ import api from '../api/axios'
  * - Admin: Provide official answers, manage questions, analytics
  */
 const EnhancedQAPage = () => {
-  const { user, token, logout } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [questions, setQuestions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -78,7 +76,7 @@ const EnhancedQAPage = () => {
   ]
 
   const handlePostQuestion = async () => {
-    if (!token) {
+    if (!user) {
       setMessage({ type: 'error', text: 'Session expired or not logged in. Please log in again.' })
       return
     }
@@ -117,7 +115,7 @@ const EnhancedQAPage = () => {
       return
     }
 
-    if (!token) {
+    if (!user) {
       setMessage({ type: 'error', text: 'Session expired or not logged in. Please log in again.' })
       return
     }
@@ -157,7 +155,7 @@ const EnhancedQAPage = () => {
       setUserAnswerError('Answer must not exceed 2000 characters')
       return
     }
-    if (!token) {
+    if (!user) {
       setMessage({ type: 'error', text: 'Session expired or not logged in. Please log in again.' })
       return
     }
@@ -312,10 +310,8 @@ const EnhancedQAPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-dark-blue">
-      <Navbar />
-
-      <div className="flex-1 px-6 py-12 max-w-7xl mx-auto w-full">
+    <div className="min-h-screen px-6 py-12 bg-dark-blue">
+      <div className="max-w-7xl mx-auto w-full">
         {/* Header */}
         <div className="mb-12">
           <h1 className="text-5xl font-bold mb-4">Q&A Community</h1>
@@ -714,8 +710,6 @@ const EnhancedQAPage = () => {
           )}
         </div>
       </div>
-
-      <Footer />
     </div>
   )
 }

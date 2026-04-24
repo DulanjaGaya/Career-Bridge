@@ -128,6 +128,15 @@ const Navbar = () => {
             <Link to="/browse-jobs" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition">
               Browse Jobs
             </Link>
+            <Link to="/faq" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition">
+              FAQ
+            </Link>
+            <Link to="/qa" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition">
+              Q&A
+            </Link>
+            <Link to="/feedback" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition">
+              Feedback
+            </Link>
 
             {user ? (
               <>
@@ -287,6 +296,15 @@ const Navbar = () => {
             <div className="flex flex-col space-y-3">
               <Link to="/browse-jobs" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                 Browse Jobs
+              </Link>
+              <Link to="/faq" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                FAQ
+              </Link>
+              <Link to="/qa" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                Q&A
+              </Link>
+              <Link to="/feedback" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                Feedback
               </Link>
               {user ? (
                 <>
