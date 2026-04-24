@@ -36,17 +36,19 @@ This workspace keeps each member module separate and adds one website entry poin
 2. `npm run dev --prefix frontend/main-app`
 3. Open `http://localhost:5180`
 
+The main app includes routes for all M/I/T/D features, plus dedicated sign-in and sign-up pages and a shared header and footer.
+
 ## One Command Startup
 
 1. First-time only: `npm run install:all`
 2. Every time: `npm run dev`
-3. Open `http://localhost:5180`
+3. Open `http://localhost:5180` as the primary URL (other terminal URLs are the individual module dev servers)
 
 ## Database
 
-See `DATABASE_SETUP.md`.
+Per-module connection details and `.env` locations: see **`DATABASE_SETUP.md`**.
 
 ## Notes
 
 - Member folders stay separate; integration is additive.
-- If any module needs `.env`, keep that file inside that module only.
+- If any module needs `.env`, keep that file inside that module only (never commit real secrets).
