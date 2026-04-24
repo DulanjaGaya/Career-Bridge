@@ -5,6 +5,24 @@ import { motion } from 'framer-motion';
 import { Hash, Plus, Users } from 'lucide-react';
 import api from '../../api/axios';
 import { AuthContext } from '../../context/AuthContext';
+import { motion } from 'framer-motion';
+import { Plus, Hash, Users } from 'lucide-react';
+
+const SkeletonCard = () => (
+    <div className="bg-brand-surface rounded-xl border border-brand-border p-6 flex flex-col animate-pulse">
+        <div className="flex justify-between items-start mb-4">
+            <div className="h-6 w-16 bg-brand-border rounded-md"></div>
+            <div className="h-6 w-14 bg-brand-bg rounded-md"></div>
+        </div>
+        <div className="h-6 w-3/4 bg-brand-border rounded mb-2"></div>
+        <div className="h-4 w-full bg-brand-bg rounded mb-1"></div>
+        <div className="h-4 w-2/3 bg-brand-bg rounded mb-6"></div>
+        <div className="pt-5 border-t border-brand-border/50 flex justify-between items-center mt-auto">
+            <div className="h-4 w-24 bg-brand-bg rounded"></div>
+            <div className="h-8 w-16 bg-brand-border rounded-lg"></div>
+        </div>
+    </div>
+);
 
 const SkeletonCard = () => (
     <div className="bg-brand-surface rounded-xl border border-brand-border p-6 animate-pulse">

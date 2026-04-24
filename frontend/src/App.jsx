@@ -25,11 +25,13 @@ import MyJobsPage from './pages/employer/MyJobs';
 import FeedbackPage from './pages/FeedbackPage';
 import EnhancedQAPage from './pages/EnhancedQAPage';
 import FAQPage from './pages/FAQPage';
-
 const getDashboardPath = (role) => {
   if (role === 'employer') {
     return '/employer/dashboard';
   }
+import About from './pages/About';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 
   if (role === 'student') {
     return '/student/dashboard';
@@ -55,6 +57,9 @@ const App = () => {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<HomePage />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
           <Route path="/login" element={user ? <Navigate to={getDashboardPath(user.role)} replace /> : <LoginPage />} />
           <Route path="/signup" element={user ? <Navigate to={getDashboardPath(user.role)} replace /> : <SignupPage />} />
           <Route path="/register" element={<Navigate to="/signup" replace />} />

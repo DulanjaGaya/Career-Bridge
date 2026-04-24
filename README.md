@@ -1,11 +1,17 @@
 # Career Bridge
 
-Full-stack interview practice platform built with React, Vite, Tailwind CSS, Express, and MongoDB. The app combines two main workflows:
+This repository contains multiple full-stack apps developed in collaboration.
 
-- real-time mock interview lobbies with timed multiple-choice questions and live scoring
-- a personal resource tracker with progress history, ratings, PDF resource submission, and downloadable progress reports
+---
 
-## Features
+## App A — Interview practice (`frontend/` + `backend/`)
+
+Full-stack interview practice platform built with React, Vite, Tailwind CSS, Express, and MongoDB:
+
+- Real-time mock interview lobbies with timed multiple-choice questions and live scoring
+- Personal resource tracker with progress history, ratings, PDF resource submission, and downloadable progress reports
+
+### Features
 
 - JWT-based user registration and login
 - Protected frontend routes and authenticated API requests
@@ -18,27 +24,14 @@ Full-stack interview practice platform built with React, Vite, Tailwind CSS, Exp
 - Downloadable PDF completion report generated on the backend
 - Seed script for sample questions and resources
 
-## Tech Stack
+### Tech stack (App A)
 
-### Frontend
+| | |
+| --- | --- |
+| Frontend | React 19, Vite, Tailwind CSS, React Router, Axios, Framer Motion |
+| Backend | Node.js, Express, MongoDB (Mongoose), JWT, bcryptjs, PDFKit |
 
-- React 19
-- Vite
-- Tailwind CSS
-- React Router
-- Axios
-- Framer Motion
-
-### Backend
-
-- Node.js
-- Express
-- MongoDB with Mongoose
-- JSON Web Tokens
-- bcryptjs
-- PDFKit
-
-## Project Structure
+### Project structure (App A)
 
 ```text
 .
@@ -54,21 +47,16 @@ Full-stack interview practice platform built with React, Vite, Tailwind CSS, Exp
 |-- frontend/
 |   |-- public/
 |   |-- src/
-|   |   |-- api/
-|   |   |-- components/
-|   |   |-- context/
-|   |   `-- pages/
 |   `-- vite.config.js
-`-- README.md
 ```
 
-## Prerequisites
+### Prerequisites (App A)
 
 - Node.js 18+
 - npm
-- MongoDB running locally or a MongoDB connection string you can use
+- MongoDB running locally or a connection string
 
-## Environment Variables
+### Environment (App A)
 
 Create `backend/.env` from `backend/.env.example`:
 
@@ -79,48 +67,17 @@ JWT_SECRET=add_your_secret_here
 NODE_ENV=development
 ```
 
-### Variable Reference
-
-| Variable | Description |
-| --- | --- |
-| `PORT` | Port used by the Express API |
-| `MONGO_URI` | MongoDB connection string |
-| `JWT_SECRET` | Secret used to sign auth tokens |
-| `NODE_ENV` | Runtime environment name |
-
-## Installation
-
-Install dependencies for both apps:
+### Run App A locally
 
 ```bash
-cd backend
-npm install
+cd backend && npm install && npm run dev
 ```
 
 ```bash
-cd frontend
-npm install
+cd frontend && npm install && npm run dev
 ```
 
-## Running Locally
-
-Start the backend:
-
-```bash
-cd backend
-npm run dev
-```
-
-Start the frontend in a second terminal:
-
-```bash
-cd frontend
-npm run dev
-```
-
-Open the app at `http://localhost:5173`.
-
-The Vite dev server proxies `/api` requests to `http://localhost:5001`.
+Open [http://localhost:5173](http://localhost:5173). The Vite dev server proxies `/api` to `http://localhost:5000`.
 
 ## Seed Sample Data
 
@@ -133,55 +90,66 @@ cd backend
 node seed/seeder.js
 ```
 
-Delete seeded questions and resources:
+Delete seeded data: `node seed/seeder.js -d`
+
+---
+
+## App B — Career readiness / résumé + dashboard (`client/` + `server/`)
+
+Full-stack demo aligned with **React**, **Node.js (Express)**, and **SQL** via **Prisma** (SQLite locally; PostgreSQL-ready).
+
+### Features (App B)
+
+| Area | What is implemented |
+| --- | --- |
+| **Résumé builder** | Guided sections, client-side validation (Zod + React Hook Form), PDF (jsPDF) & Word (docx) export |
+| **Dummy data** | “Load demo CV” on the home page |
+| **AI / NLP (demo)** | `POST /api/suggestions/achievement` — rule-based phrasing helper |
+| **Dashboard** | Readiness score, Chart.js charts, milestone progress, task CRUD, notifications |
+| **Real-time** | Socket.IO — notifications to the signed-in user’s room |
+| **Automation** | node-cron — daily due-soon reminders + overdue alerts |
+
+### Prerequisites (App B)
+
+- **Node.js 20+** (LTS recommended)
+- npm
+
+### Setup (App B)
 
 ```bash
-cd backend
-node seed/seeder.js -d
+npm install
+cd server
+npx prisma generate
+npx prisma db push
+cd ..
+npm run dev
 ```
 
-Note: the seed script clears the `Question` and `Resource` collections before importing.
+- **API + WebSocket:** [http://localhost:4000](http://localhost:4000) (`/api/health`)
+- **React app:** [http://localhost:5173](http://localhost:5173) — *note:* conflicts with App A’s Vite port if both run; use one stack at a time or change ports in config.
 
-## Available Scripts
+Create `server/.env` from `server/.env.example` for database URL and secrets.
 
-### Backend
+### PostgreSQL (optional, App B)
+
+Set `DATABASE_URL` in `server/.env`, switch `provider` in `server/prisma/schema.prisma` to `postgresql`, then `npx prisma db push`.
+
+### Project structure (App B)
+
+- `client/` — React (Vite) SPA  
+- `server/` — Express API, Prisma, cron, Socket.IO  
+
+### Scripts (App B)
 
 | Command | Description |
 | --- | --- |
-| `npm start` | Start the API with Node |
-| `npm run dev` | Start the API with Nodemon |
+| `npm run dev` | Runs API + client together (from repo root) |
+| `npm run db:push` | Applies Prisma schema |
+| `npm run db:studio` | Prisma Studio |
 
-### Frontend
-
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start the Vite development server |
-| `npm run build` | Create a production build |
-| `npm run preview` | Preview the production build locally |
-| `npm run lint` | Run ESLint |
-
-## Main API Areas
-
-| Area | Endpoints |
-| --- | --- |
-| Auth | `/api/auth/register`, `/api/auth/login`, `/api/auth/me` |
-| Lobbies | `/api/lobbies`, `/api/lobbies/:id`, `/api/lobbies/:id/join`, `/api/lobbies/:id/next-question`, `/api/lobbies/:id/close` |
-| Questions | `/api/questions` |
-| Answers | `/api/answers`, `/api/answers/results/:lobbyId/:questionId`, `/api/answers/scoreboard/:lobbyId` |
-| Resources | `/api/resources`, `/api/resources/:id`, `/api/resources/add-pdf`, `/api/resources/timeline`, `/api/resources/report/download` |
-| Progress | `/api/progress/toggle`, `/api/progress/summary` |
-| Feedback | `/api/feedback`, `/api/feedback/:resourceId`, `/api/feedback/resource/:resourceId` |
-
-## Current User Flows
-
-1. Register or log in.
-2. Browse or create a mock interview lobby.
-3. Join a topic-based session and answer timed questions.
-4. Track learning resources, mark items complete, and review your progress history.
-5. Rate resources and export your completion report as a PDF.
+---
 
 ## Notes
 
-- Authentication tokens are stored in local storage on the frontend.
-- Several API routes require a Bearer token.
-- There is currently no automated test suite configured in either app.
+- **App A** auth tokens are stored in local storage; several routes require a Bearer token.
+- **App B** is a separate module in this monorepo; coordinate ports and env files when running both.
