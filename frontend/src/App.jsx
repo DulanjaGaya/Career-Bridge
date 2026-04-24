@@ -9,6 +9,11 @@ import LobbyList from './pages/Lobby/LobbyList';
 import CreateLobby from './pages/Lobby/CreateLobby';
 import LobbyRoom from './pages/Lobby/LobbyRoom';
 import ResourceTracker from './pages/Resource/ResourceTracker';
+import {
+    ReadinessAnalyticsRoute,
+    ReadinessLandingRoute,
+    ReadinessResumeRoute,
+} from './readiness/ReadinessRoutes';
 import Home from './pages/Home';
 import About from './pages/About';
 import PrivacyPolicy from './pages/PrivacyPolicy';
