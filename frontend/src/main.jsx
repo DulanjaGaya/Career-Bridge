@@ -7,6 +7,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import './index.css';
+import './readiness/styles.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {

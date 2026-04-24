@@ -1,14 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { studentService } from '../services/studentService';
 import toast from 'react-hot-toast';
+import { authService } from '../services/authService';
 
 export const useStudent = () => {
   const queryClient = useQueryClient();
+  const currentUser = authService.getCurrentUser();
+  const canUseStudentApis = currentUser?.role === 'student';
 
   const useAppliedJobs = (params) => {
     return useQuery({
       queryKey: ['appliedJobs', params],
       queryFn: () => studentService.getAppliedJobs(params),
+      enabled: canUseStudentApis,
       staleTime: 0,
       refetchOnMount: 'always',
       refetchOnWindowFocus: true,
@@ -19,6 +23,7 @@ export const useStudent = () => {
     return useQuery({
       queryKey: ['savedJobs', params],
       queryFn: () => studentService.getSavedJobs(params),
+      enabled: canUseStudentApis,
       staleTime: 5 * 60 * 1000,
       refetchOnMount: 'always',
       refetchOnWindowFocus: true,
@@ -29,6 +34,7 @@ export const useStudent = () => {
     return useQuery({
       queryKey: ['studentProfile'],
       queryFn: studentService.getProfile,
+      enabled: canUseStudentApis,
       staleTime: 10 * 60 * 1000,
     });
   };
@@ -37,6 +43,7 @@ export const useStudent = () => {
     return useQuery({
       queryKey: ['applicationStats'],
       queryFn: studentService.getApplicationStats,
+      enabled: canUseStudentApis,
       staleTime: 0,
       refetchOnMount: 'always',
       refetchOnWindowFocus: true,

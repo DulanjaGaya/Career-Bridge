@@ -11,6 +11,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const faqRoutes = require('./routes/faqRoutes');
 const feedbackRoutes = require('./routes/feedbackRoutes');
 const questionRoutes = require('./routes/questionRoutes');
+const User = require('./models/User');
 
 connectDB();
 
@@ -44,6 +45,31 @@ app.use('/api/questions', questionRoutes);
 
   app.get('/health', (req, res) => {
     res.json({ message: 'Career Bridge API is running' });
+  });
+
+  app.get('/api/readiness/users/me', async (req, res) => {
+    try {
+      const email = typeof req.query.email === 'string' ? req.query.email.trim().toLowerCase() : '';
+
+      if (!email) {
+        return res.status(400).json({ message: 'email query required' });
+      }
+
+      const user = await User.findOne({ email }).select('name email createdAt');
+      if (!user) {
+        return res.status(404).json({ message: 'Not found' });
+      }
+
+      return res.json({
+        id: user._id.toString(),
+        email: user.email,
+        name: user.name,
+        createdAt: user.createdAt,
+      });
+    } catch (error) {
+      console.error('Failed to resolve readiness user lookup:', error);
+      return res.status(500).json({ message: 'Failed to resolve user' });
+    }
   });
 
   app.use((req, res) => {

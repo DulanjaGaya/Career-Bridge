@@ -2,14 +2,16 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../api/axios';
+import InterviewQuestionEditor from './InterviewQuestionEditor';
 
 const CreateLobby = () => {
     const [title, setTitle] = useState('');
     const [topic, setTopic] = useState('DSA');
     const [description, setDescription] = useState('');
     const [maxMembers, setMaxMembers] = useState(5);
-    const [questionCount, setQuestionCount] = useState(5);
     const [questionTimeLimit, setQuestionTimeLimit] = useState(10);
+    const [questions, setQuestions] = useState([]);
+    const [isQuestionEditorOpen, setIsQuestionEditorOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     
     const navigate = useNavigate();
@@ -18,13 +20,19 @@ const CreateLobby = () => {
         e.preventDefault();
         setLoading(true);
         try {
+            if (questions.length === 0) {
+                toast.error('Add at least one interview question');
+                setLoading(false);
+                return;
+            }
+
             const { data } = await api.post('/lobbies', {
                 title,
                 topic,
                 description,
                 maxMembers,
-                questionCount,
                 questionTimeLimit,
+                questions,
             });
             toast.success('Room created successfully!');
             navigate(`/lobbies/${data._id}`);
@@ -42,6 +50,16 @@ const CreateLobby = () => {
             >
                 ← Back to Lobbies
             </button>
+
+            <InterviewQuestionEditor
+                isOpen={isQuestionEditorOpen}
+                initialQuestions={questions}
+                onClose={() => setIsQuestionEditorOpen(false)}
+                onSave={(nextQuestions) => {
+                    setQuestions(nextQuestions);
+                    setIsQuestionEditorOpen(false);
+                }}
+            />
             
             <div className="bg-brand-surface rounded-xl shadow-lg border border-brand-border p-8">
                 <h1 className="text-2xl font-bold text-brand-text mb-6 border-b border-brand-border pb-4">Create Mock Interview Room</h1>
@@ -99,15 +117,20 @@ const CreateLobby = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label className="block text-sm font-medium text-brand-text mb-1">Questions Per Lobby</label>
-                            <input
-                                type="number"
-                                min="1"
-                                max="10"
-                                value={questionCount}
-                                onChange={(e) => setQuestionCount(e.target.value)}
-                                className="w-full bg-brand-bg border border-brand-border text-brand-text rounded-lg px-4 py-2 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all font-sans"
-                            />
+                            <label className="block text-sm font-medium text-brand-text mb-1">Interview Questions</label>
+                            <div className="flex items-center justify-between gap-3 rounded-lg border border-brand-border bg-brand-bg px-4 py-3">
+                                <div>
+                                    <p className="text-sm font-medium text-brand-text">{questions.length} added</p>
+                                    <p className="text-xs text-brand-muted">Each question needs 4 answer choices.</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsQuestionEditorOpen(true)}
+                                    className="rounded-lg border border-brand-primary/30 bg-brand-primary/10 px-4 py-2 text-sm font-semibold text-brand-primary transition-colors hover:bg-brand-primary/20"
+                                >
+                                    {questions.length > 0 ? 'Edit questions' : 'Add questions'}
+                                </button>
+                            </div>
                         </div>
 
                         <div>
@@ -122,6 +145,12 @@ const CreateLobby = () => {
                             />
                         </div>
                     </div>
+
+                    {questions.length > 0 && (
+                        <div className="rounded-lg border border-brand-border bg-brand-bg/60 p-4 text-sm text-brand-muted">
+                            Interview room will use the questions you created here instead of the community Q&A list.
+                        </div>
+                    )}
 
                     <div className="pt-4">
                         <button 

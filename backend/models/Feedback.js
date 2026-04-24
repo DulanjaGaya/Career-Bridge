@@ -28,6 +28,13 @@ const feedbackSchema = new mongoose.Schema(
       required: true
     },
 
+    resourceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Resource',
+      index: true,
+      default: null
+    },
+
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

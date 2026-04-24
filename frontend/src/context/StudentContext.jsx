@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext } from 'react';
 import { studentService } from '../services/studentService';
+import { authService } from '../services/authService';
 
 const StudentContext = createContext();
 
@@ -15,8 +16,11 @@ export const StudentProvider = ({ children }) => {
   const [appliedJobs, setAppliedJobs] = useState([]);
   const [savedJobs, setSavedJobs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const currentUser = authService.getCurrentUser();
+  const canUseStudentApis = currentUser?.role === 'student';
 
   const fetchAppliedJobs = async () => {
+    if (!canUseStudentApis) return;
     setLoading(true);
     try {
       const data = await studentService.getAppliedJobs();
@@ -29,6 +33,7 @@ export const StudentProvider = ({ children }) => {
   };
 
   const fetchSavedJobs = async () => {
+    if (!canUseStudentApis) return;
     setLoading(true);
     try {
       const data = await studentService.getSavedJobs();
@@ -41,6 +46,9 @@ export const StudentProvider = ({ children }) => {
   };
 
   const applyForJob = async (jobId, coverLetter) => {
+    if (!canUseStudentApis) {
+      throw new Error('Student account required');
+    }
     setLoading(true);
     try {
       const data = await studentService.applyForJob(jobId, { coverLetter });
@@ -54,6 +62,9 @@ export const StudentProvider = ({ children }) => {
   };
 
   const saveJob = async (jobId) => {
+    if (!canUseStudentApis) {
+      throw new Error('Student account required');
+    }
     try {
       const data = await studentService.saveJob(jobId);
       await fetchSavedJobs();
@@ -64,6 +75,9 @@ export const StudentProvider = ({ children }) => {
   };
 
   const unsaveJob = async (jobId) => {
+    if (!canUseStudentApis) {
+      throw new Error('Student account required');
+    }
     try {
       const data = await studentService.unsaveJob(jobId);
       await fetchSavedJobs();

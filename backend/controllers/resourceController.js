@@ -1,6 +1,7 @@
 import Resource from '../models/Resource.js';
 import Progress from '../models/Progress.js';
 import PDFDocument from 'pdfkit';
+import path from 'path';
 
 // @desc    Get all resources
 // @route   GET /api/resources
@@ -292,9 +293,11 @@ const COLORS = {
     success:      '#16A34A',   // green — easy
 };
 
+const WINDOWS_FONTS_DIR = path.join(process.env.WINDIR || 'C:\\Windows', 'Fonts');
+
 const FONT = {
-    regular: 'Helvetica',
-    bold:    'Helvetica-Bold',
+    regular: path.join(WINDOWS_FONTS_DIR, 'arial.ttf'),
+    bold:    path.join(WINDOWS_FONTS_DIR, 'arialbd.ttf'),
 };
 
 // Page geometry (A4 = 595.28 × 841.89 pt)

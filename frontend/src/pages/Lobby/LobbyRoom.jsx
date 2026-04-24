@@ -56,10 +56,8 @@ const LobbyRoom = () => {
     const isHost = lobby?.host?._id === user._id;
     const questionOptions = Array.isArray(currentQuestion?.options)
         ? currentQuestion.options
-        : Array.isArray(currentQuestion?.answers)
-            ? currentQuestion.answers.map((answer) => answer.text).filter(Boolean)
-            : [];
-    const questionPrompt = currentQuestion?.title || currentQuestion?.text || 'Question';
+        : [];
+    const questionPrompt = currentQuestion?.prompt || currentQuestion?.title || currentQuestion?.text || 'Question';
     const questionDescription = currentQuestion?.description || '';
 
     const advanceToNextQuestion = async () => {

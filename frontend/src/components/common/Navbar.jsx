@@ -11,11 +11,13 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isPracticeMenuOpen, setIsPracticeMenuOpen] = useState(false);
+  const [isReadinessMenuOpen, setIsReadinessMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const notificationMenuRef = useRef(null);
   const practiceMenuRef = useRef(null);
+  const readinessMenuRef = useRef(null);
 
   const loadNotifications = async () => {
     if (!user) return;
@@ -55,6 +57,10 @@ const Navbar = () => {
 
       if (practiceMenuRef.current && !practiceMenuRef.current.contains(event.target)) {
         setIsPracticeMenuOpen(false);
+      }
+
+      if (readinessMenuRef.current && !readinessMenuRef.current.contains(event.target)) {
+        setIsReadinessMenuOpen(false);
       }
     };
 
@@ -118,10 +124,10 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-dark-card shadow-lg sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
+    <nav className="sticky top-0 z-50 border-b border-slate-800/70 bg-dark-card/95 shadow-lg backdrop-blur">
+      <div className="mx-auto w-full max-w-[1800px] px-6 sm:px-8 lg:px-10">
+        <div className="flex h-20 items-center justify-between gap-6">
+        <div className="flex shrink-0 items-center">
             <Link to="/" className="flex items-center space-x-2">
               <FiBriefcase className="h-8 w-8 text-primary-600" />
               <span className="font-bold text-xl text-slate-100">Career Bridge</span>
@@ -130,7 +136,7 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex flex-1 items-center justify-center gap-2 xl:gap-3">
             <Link to="/browse-jobs" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition">
               Browse Jobs
             </Link>
@@ -187,21 +193,69 @@ const Navbar = () => {
             <Link to="/faq" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition">
               FAQ
             </Link>
+            <div className="relative" ref={readinessMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsReadinessMenuOpen((current) => !current)}
+                className="flex items-center gap-1.5 text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition"
+                aria-haspopup="menu"
+                aria-expanded={isReadinessMenuOpen}
+              >
+                Career Readiness
+                <FiChevronDown className={`h-4 w-4 transition-transform ${isReadinessMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isReadinessMenuOpen && (
+                <div className="absolute left-0 mt-2 w-72 rounded-2xl border border-slate-700 bg-[#101935] shadow-2xl overflow-hidden z-50">
+                  <Link
+                    to="/career"
+                    onClick={() => setIsReadinessMenuOpen(false)}
+                    className="flex items-start gap-3 px-4 py-3 text-sm text-slate-200 hover:bg-slate-900/70 hover:text-primary-300 transition"
+                  >
+                    <FiBarChart2 className="mt-0.5 h-4 w-4 text-primary-400" />
+                    <span>
+                      <span className="block font-semibold text-slate-100">Overview</span>
+                      <span className="block text-xs text-slate-400">Open the readiness landing page</span>
+                    </span>
+                  </Link>
+                  <Link
+                    to="/resume"
+                    onClick={() => setIsReadinessMenuOpen(false)}
+                    className="flex items-start gap-3 px-4 py-3 text-sm text-slate-200 hover:bg-slate-900/70 hover:text-primary-300 transition border-t border-slate-800"
+                  >
+                    <FiFileText className="mt-0.5 h-4 w-4 text-primary-400" />
+                    <span>
+                      <span className="block font-semibold text-slate-100">Résumé builder</span>
+                      <span className="block text-xs text-slate-400">Edit, preview, and export</span>
+                    </span>
+                  </Link>
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setIsReadinessMenuOpen(false)}
+                    className="flex items-start gap-3 px-4 py-3 text-sm text-slate-200 hover:bg-slate-900/70 hover:text-primary-300 transition border-t border-slate-800"
+                  >
+                    <FiBarChart2 className="mt-0.5 h-4 w-4 text-primary-400" />
+                    <span>
+                      <span className="block font-semibold text-slate-100">Analytics</span>
+                      <span className="block text-xs text-slate-400">Track tasks, score, and alerts</span>
+                    </span>
+                  </Link>
+                </div>
+              )}
+            </div>
             <Link to="/qa" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition">
               Q&A
             </Link>
             <Link to="/feedback" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition">
               Feedback
             </Link>
+          </div>
 
+          <div className="hidden md:flex shrink-0 items-center gap-3">
             {user ? (
               <>
                 {user.role === 'employer' && (
                   <>
-                    <Link to="/employer/dashboard" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition">
-                      <FiBarChart2 className="inline mr-1" />
-                      Dashboard
-                    </Link>
                     <Link to="/employer/my-jobs" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition">
                       <FiFileText className="inline mr-1" />
                       My Jobs
@@ -215,7 +269,7 @@ const Navbar = () => {
                 <button
                   type="button"
                   onClick={handleProfileClick}
-                  className="flex items-center space-x-2 border-l pl-4 ml-2 hover:bg-dark-base rounded-md px-2 py-1"
+                  className="flex items-center space-x-2 rounded-full border border-slate-700/80 bg-slate-900/40 px-3 py-1.5 hover:bg-slate-900/70 transition"
                 >
                   <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
                     <FiUser className="text-primary-600" />
@@ -336,7 +390,7 @@ const Navbar = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden ml-auto flex items-center">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="text-slate-200 hover:text-primary-600"
@@ -371,6 +425,17 @@ const Navbar = () => {
               <Link to="/faq" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                 FAQ
               </Link>
+              <div className="border-t border-slate-800 pt-3">
+                <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Career Readiness</p>
+                <Link to="/career" className="flex items-center gap-2 text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                  <FiBarChart2 />
+                  Overview
+                </Link>
+                <Link to="/resume" className="flex items-center gap-2 text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                  <FiFileText />
+                  Résumé builder
+                </Link>
+              </div>
               <Link to="/qa" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                 Q&A
               </Link>
@@ -381,9 +446,6 @@ const Navbar = () => {
                 <>
                   {user.role === 'employer' && (
                     <>
-                      <Link to="/employer/dashboard" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                        Dashboard
-                      </Link>
                       <Link to="/employer/my-jobs" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                         My Jobs
                       </Link>
@@ -393,10 +455,14 @@ const Navbar = () => {
                     </>
                   )}
                   <div className="border-t pt-3">
-                    <div className="flex items-center space-x-2 px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={handleProfileClick}
+                      className="flex w-full items-center space-x-2 px-3 py-2 text-left rounded-md hover:bg-slate-900/50 transition"
+                    >
                       <FiUser className="text-slate-300" />
                       <span className="text-sm text-slate-200">{user.name}</span>
-                    </div>
+                    </button>
                     <button
                       type="button"
                       onClick={() => {

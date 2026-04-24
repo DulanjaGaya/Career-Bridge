@@ -1,4 +1,4 @@
-const base = "";
+const base = (import.meta.env.VITE_READINESS_API_URL ?? "http://localhost:4000").replace(/\/$/, "");
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${base}${path}`, {

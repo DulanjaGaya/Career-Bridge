@@ -1,15 +1,12 @@
 import mongoose from 'mongoose';
 import Lobby from '../models/Lobby.js';
-import Question from '../models/Question.js';
 import Answer from '../models/Answer.js';
 
-const DEFAULT_QUESTION_COUNT = 5;
 const DEFAULT_QUESTION_TIME_LIMIT = 10;
 
 const lobbyPopulate = [
     { path: 'host', select: 'name email' },
     { path: 'members', select: 'name' },
-    { path: 'questions', select: '-correctAnswer' },
 ];
 
 const toPositiveNumber = (value, fallback) => {
@@ -17,110 +14,59 @@ const toPositiveNumber = (value, fallback) => {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-const toIdString = (value) => {
-    if (!value) {
-        return '';
+const normalizeInterviewQuestion = (question, index) => {
+    const prompt = typeof question?.prompt === 'string' ? question.prompt.trim() : '';
+    const description = typeof question?.description === 'string' ? question.description.trim() : '';
+    const options = Array.isArray(question?.options)
+        ? question.options.map((option) => (typeof option === 'string' ? option.trim() : '')).filter(Boolean)
+        : [];
+    const correctAnswer = typeof question?.correctAnswer === 'string' ? question.correctAnswer.trim() : '';
+
+    if (!prompt) {
+        throw new Error(`Question ${index + 1} needs a prompt`);
     }
 
-    if (typeof value === 'string') {
-        return value;
+    if (options.length !== 4) {
+        throw new Error(`Question ${index + 1} must have exactly 4 options`);
     }
 
-    if (typeof value === 'object' && value._id) {
-        return value._id.toString();
+    if (new Set(options).size !== options.length) {
+        throw new Error(`Question ${index + 1} options must be unique`);
     }
 
-    return value.toString();
+    if (!options.includes(correctAnswer)) {
+        throw new Error(`Question ${index + 1} must have a correct answer selected from the options`);
+    }
+
+    return {
+        prompt,
+        description,
+        options,
+        correctAnswer,
+    };
 };
 
-const selectLobbyQuestionIds = async (topic, requestedCount) => {
-    const topicQuestions = await Question.aggregate([
-        { $match: { topic } },
-        { $sample: { size: requestedCount } },
-        { $project: { _id: 1 } },
-    ]);
-
-    if (topicQuestions.length >= requestedCount) {
-        return topicQuestions.map((question) => question._id);
+const normalizeInterviewQuestions = (questions) => {
+    if (!Array.isArray(questions) || questions.length === 0) {
+        throw new Error('Please add at least one interview question');
     }
 
-    const usedIds = topicQuestions.map((question) => question._id);
-    const remainingCount = requestedCount - topicQuestions.length;
-
-    const fallbackQuestions = await Question.aggregate([
-        { $match: { _id: { $nin: usedIds } } },
-        { $sample: { size: remainingCount } },
-        { $project: { _id: 1 } },
-    ]);
-
-    return [...topicQuestions, ...fallbackQuestions].map((question) => question._id);
-};
-
-/** Convert a value to a valid ObjectId, returns null if invalid */
-const toObjectId = (val) => {
-    try {
-        return new mongoose.Types.ObjectId(val.toString());
-    } catch {
-        return null;
-    }
+    return questions.map((question, index) => normalizeInterviewQuestion(question, index));
 };
 
 const ensureLobbyQuestions = async (lobby) => {
-    const targetQuestionCount = DEFAULT_QUESTION_COUNT;
-    const existingIdStrings = Array.isArray(lobby.questions)
-        ? lobby.questions.map((qId) => toIdString(qId)).filter(Boolean)
-        : [];
+    const questionCount = Array.isArray(lobby.questions) ? lobby.questions.length : 0;
 
-    let questionIdStrings = [...existingIdStrings];
-
-    if (questionIdStrings.length < targetQuestionCount) {
-        const needed = targetQuestionCount - questionIdStrings.length;
-        const excludeIds = questionIdStrings.map((s) => toObjectId(s)).filter(Boolean);
-        const extraQuestions = await Question.aggregate([
-            {
-                $match: {
-                    topic: lobby.topic,
-                    _id: { $nin: excludeIds },
-                },
-            },
-            { $sample: { size: needed } },
-            { $project: { _id: 1 } },
-        ]);
-
-        questionIdStrings = [...questionIdStrings, ...extraQuestions.map((q) => q._id.toString())];
-    }
-
-    if (questionIdStrings.length < targetQuestionCount) {
-        const needed = targetQuestionCount - questionIdStrings.length;
-        const excludeIds = questionIdStrings.map((s) => toObjectId(s)).filter(Boolean);
-        const fallbackQuestions = await Question.aggregate([
-            { $match: { _id: { $nin: excludeIds } } },
-            { $sample: { size: needed } },
-            { $project: { _id: 1 } },
-        ]);
-        questionIdStrings = [...questionIdStrings, ...fallbackQuestions.map((q) => q._id.toString())];
-    }
-
-    if (questionIdStrings.length > targetQuestionCount) {
-        questionIdStrings = questionIdStrings.slice(0, targetQuestionCount);
-    }
-
-    if (questionIdStrings.length === 0) {
+    if (questionCount === 0) {
         throw new Error('No questions available for this lobby');
     }
 
-    // Convert back to ObjectIds before saving to satisfy Mongoose schema
-    lobby.questions = questionIdStrings.map((s) => toObjectId(s)).filter(Boolean);
-    lobby.questionCount = targetQuestionCount;
-    lobby.questionTimeLimit = DEFAULT_QUESTION_TIME_LIMIT;
-    lobby.questionStartedAt = lobby.questionStartedAt || new Date();
-
-    if (lobby.currentQuestionIndex >= lobby.questions.length) {
+    if (lobby.currentQuestionIndex >= questionCount) {
         lobby.currentQuestionIndex = 0;
         lobby.questionStartedAt = new Date();
+        await lobby.save();
     }
 
-    await lobby.save();
     return lobby;
 };
 
@@ -174,14 +120,8 @@ const autoAdvanceLobbyByTime = async (lobby) => {
 // @access  Private
 export const createLobby = async (req, res, next) => {
     try {
-        const { title, topic, description, maxMembers } = req.body;
-        // Always use 5 questions and 10 seconds per question
-        const questionIds = await selectLobbyQuestionIds(topic, 5);
-
-        if (questionIds.length === 0) {
-            res.status(400);
-            throw new Error('No questions are available for the selected topic');
-        }
+        const { title, topic, description, maxMembers, questionTimeLimit, questions } = req.body;
+        const interviewQuestions = normalizeInterviewQuestions(questions);
 
         const lobby = await Lobby.create({
             title,
@@ -190,9 +130,9 @@ export const createLobby = async (req, res, next) => {
             maxMembers: toPositiveNumber(maxMembers, 5),
             host: req.user._id,
             members: [req.user._id],
-            questions: questionIds,
-            questionCount: 5,
-            questionTimeLimit: 10,
+            questions: interviewQuestions,
+            questionCount: interviewQuestions.length,
+            questionTimeLimit: toPositiveNumber(questionTimeLimit, DEFAULT_QUESTION_TIME_LIMIT),
             questionStartedAt: new Date(),
         });
 

@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { z } from "zod";
-import { MilestoneCategory, NotificationKind } from "@prisma/client";
 import { prisma } from "../db.js";
 import { computeReadinessScore } from "../readiness.js";
 import {
@@ -10,12 +9,17 @@ import {
 } from "../socketHub.js";
 
 const router = Router();
+const MILSTONE_CATEGORIES = ["RESUME", "INTERNSHIP", "INTERVIEW", "GENERAL"] as const;
+const NOTIFICATION_KINDS = ["REMINDER", "DEADLINE", "SYSTEM", "MILESTONE"] as const;
+
+type MilestoneCategory = (typeof MILSTONE_CATEGORIES)[number];
+type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
 const taskBody = z.object({
   userId: z.string().min(1),
   title: z.string().min(1).max(200),
   description: z.string().max(2000).optional(),
-  category: z.nativeEnum(MilestoneCategory).optional(),
+  category: z.enum(MILSTONE_CATEGORIES).optional(),
   dueDate: z.string().datetime().optional().nullable(),
   completed: z.boolean().optional(),
 });
@@ -42,7 +46,7 @@ router.post("/tasks", async (req, res) => {
       userId,
       title,
       description: description ?? null,
-      category: category ?? MilestoneCategory.GENERAL,
+      category: category ?? "GENERAL",
       dueDate: dueDate ? new Date(dueDate) : null,
       completed: completed ?? false,
     },
@@ -56,7 +60,7 @@ router.post("/tasks", async (req, res) => {
         data: {
           userId,
           message: `Task added: "${title}" — due ${d.toLocaleDateString(undefined, { dateStyle: "medium" })}.`,
-          kind: NotificationKind.MILESTONE,
+          kind: "MILESTONE",
         },
       });
       emitNotificationToUser(userId, n);
@@ -71,7 +75,7 @@ router.patch("/tasks/:id", async (req, res) => {
     .object({
       title: z.string().min(1).max(200).optional(),
       description: z.string().max(2000).optional().nullable(),
-      category: z.nativeEnum(MilestoneCategory).optional(),
+      category: z.enum(MILSTONE_CATEGORIES).optional(),
       dueDate: z.string().datetime().optional().nullable(),
       completed: z.boolean().optional(),
     })
@@ -142,7 +146,7 @@ router.post("/notifications", async (req, res) => {
     .object({
       userId: z.string().min(1),
       message: z.string().min(1).max(2000),
-      kind: z.nativeEnum(NotificationKind).optional(),
+      kind: z.enum(NOTIFICATION_KINDS).optional(),
     })
     .safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
@@ -152,7 +156,7 @@ router.post("/notifications", async (req, res) => {
     data: {
       userId: parsed.data.userId,
       message: parsed.data.message.trim(),
-      kind: parsed.data.kind ?? NotificationKind.REMINDER,
+      kind: parsed.data.kind ?? "REMINDER",
     },
   });
   emitNotificationToUser(parsed.data.userId, n);

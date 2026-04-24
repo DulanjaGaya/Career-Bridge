@@ -1,5 +1,4 @@
 import Answer from '../models/Answer.js';
-import Question from '../models/Question.js';
 import Lobby from '../models/Lobby.js';
 
 // @desc    Submit an answer
@@ -20,7 +19,7 @@ export const submitAnswer = async (req, res, next) => {
             throw new Error('This lobby is closed');
         }
 
-        const lobbyQuestionIds = lobby.questions.map((qId) => qId.toString());
+        const lobbyQuestionIds = lobby.questions.map((question) => question._id.toString());
         if (!lobbyQuestionIds.includes(questionId)) {
             res.status(400);
             throw new Error('Question does not belong to this lobby');
@@ -43,10 +42,15 @@ export const submitAnswer = async (req, res, next) => {
             throw new Error('You already answered this question in the current attempt');
         }
 
-        const question = await Question.findById(questionId);
+        const question = lobby.questions.find((q) => q._id.toString() === questionId);
         if (!question) {
             res.status(404);
             throw new Error('Question not found');
+        }
+
+        if (!question.options.includes(selectedOption)) {
+            res.status(400);
+            throw new Error('Selected option is not valid for this question');
         }
 
         const isCorrect = question.correctAnswer === selectedOption;

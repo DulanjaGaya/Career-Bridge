@@ -7,6 +7,10 @@ import { useAuth } from './hooks/useAuth';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import About from './pages/About';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import { CareerDashboardPage, CareerLandingPage, CareerResumePage } from './pages/CareerBridge';
 import CreateLobby from './pages/Lobby/CreateLobby';
 import LobbyList from './pages/Lobby/LobbyList';
 import LobbyRoom from './pages/Lobby/LobbyRoom';
@@ -25,13 +29,11 @@ import MyJobsPage from './pages/employer/MyJobs';
 import FeedbackPage from './pages/FeedbackPage';
 import EnhancedQAPage from './pages/EnhancedQAPage';
 import FAQPage from './pages/FAQPage';
+
 const getDashboardPath = (role) => {
   if (role === 'employer') {
     return '/employer/dashboard';
   }
-import About from './pages/About';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsOfService from './pages/TermsOfService';
 
   if (role === 'student') {
     return '/student/dashboard';
@@ -57,9 +59,27 @@ const App = () => {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<HomePage />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/career" element={<CareerLandingPage />} />
+          <Route path="/readiness" element={<Navigate to="/career" replace />} />
+          <Route
+            path="/resume"
+            element={
+              <ProtectedRoute>
+                <CareerResumePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <CareerDashboardPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/login" element={user ? <Navigate to={getDashboardPath(user.role)} replace /> : <LoginPage />} />
           <Route path="/signup" element={user ? <Navigate to={getDashboardPath(user.role)} replace /> : <SignupPage />} />
           <Route path="/register" element={<Navigate to="/signup" replace />} />

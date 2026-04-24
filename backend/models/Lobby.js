@@ -1,5 +1,22 @@
 import mongoose from 'mongoose';
 
+const lobbyQuestionSchema = new mongoose.Schema(
+    {
+        prompt: { type: String, required: true, trim: true },
+        description: { type: String, default: '' },
+        options: {
+            type: [String],
+            required: true,
+            validate: {
+                validator: (options) => Array.isArray(options) && options.length === 4,
+                message: 'Each interview question must have exactly 4 options.',
+            },
+        },
+        correctAnswer: { type: String, required: true, trim: true },
+    },
+    { timestamps: false }
+);
+
 const lobbySchema = mongoose.Schema(
     {
         title: { type: String, required: true },
@@ -8,7 +25,7 @@ const lobbySchema = mongoose.Schema(
         maxMembers: { type: Number, required: true, default: 5 },
         host: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' },
         members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-        questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
+        questions: [lobbyQuestionSchema],
         questionCount: { type: Number, required: true, default: 5 },
         questionTimeLimit: { type: Number, required: true, default: 10 },
         questionStartedAt: { type: Date, default: Date.now },

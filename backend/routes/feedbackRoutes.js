@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 
 const {
   getFeedback,
+  getResourceFeedback,
   createFeedback,
   updateFeedback,
   deleteFeedback,
@@ -14,6 +15,9 @@ const {
 
 // GET → Admin (all) + User (own)
 router.get('/', auth, getFeedback);
+
+// GET → Resource rating summary + reviews
+router.get('/resource/:resourceId', auth, getResourceFeedback);
 
 // CREATE → User
 router.post('/', auth, createFeedback);

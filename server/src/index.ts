@@ -1,9 +1,10 @@
-import "dotenv/config";
-import { NotificationKind } from "@prisma/client";
+import dotenv from "dotenv";
 import cors from "cors";
 import express from "express";
 import http from "http";
 import cron from "node-cron";
+import { existsSync, readFileSync } from "fs";
+import path from "path";
 import { Server as SocketIOServer } from "socket.io";
 import { prisma } from "./db.js";
 import { setSocketIO } from "./socketHub.js";
@@ -13,14 +14,58 @@ import seedRoutes from "./routes/seed.js";
 import suggestionsRoutes from "./routes/suggestions.js";
 import usersRoutes from "./routes/users.js";
 
+dotenv.config();
+
+const backendEnvPath = path.resolve(process.cwd(), "../backend/.env");
+if (existsSync(backendEnvPath)) {
+  const backendEnv = dotenv.parse(readFileSync(backendEnvPath));
+  if (!process.env.MONGODB_URI && backendEnv.MONGODB_URI) {
+    process.env.MONGODB_URI = backendEnv.MONGODB_URI;
+  }
+  if (!process.env.CLIENT_ORIGIN && backendEnv.CLIENT_ORIGIN) {
+    process.env.CLIENT_ORIGIN = backendEnv.CLIENT_ORIGIN;
+  }
+  if (!process.env.CLIENT_ORIGINS && backendEnv.CLIENT_ORIGINS) {
+    process.env.CLIENT_ORIGINS = backendEnv.CLIENT_ORIGINS;
+  }
+}
+
+process.env.PORT = process.env.PORT ?? "4000";
+
+const configuredOrigins = (process.env.CLIENT_ORIGINS ?? process.env.CLIENT_ORIGIN ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const isAllowedOrigin = (origin: string | undefined) => {
+  if (!origin) return true;
+  if (configuredOrigins.includes(origin)) return true;
+
+  try {
+    const url = new URL(origin);
+    return (url.hostname === "localhost" || url.hostname === "127.0.0.1") && url.protocol === "http:";
+  } catch {
+    return false;
+  }
+};
+
+const corsOrigin = (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+  if (isAllowedOrigin(origin)) {
+    callback(null, true);
+    return;
+  }
+
+  callback(new Error(`CORS origin not allowed: ${origin ?? "<missing>"}`));
+};
+
 const app = express();
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
-  cors: { origin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173", methods: ["GET", "POST"] },
+  cors: { origin: corsOrigin, methods: ["GET", "POST"] },
 });
 setSocketIO(io);
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173" }));
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: "2mb" }));
 
 /** Root URL — API has no HTML app; use the React dev server on port 5173 for the UI */
@@ -73,7 +118,7 @@ cron.schedule("0 9 * * *", async () => {
   for (const t of dueSoon) {
     const msg = `Reminder: "${t.title}" is due soon.`;
     const n = await prisma.notification.create({
-      data: { userId: t.userId, message: msg, kind: NotificationKind.REMINDER },
+      data: { userId: t.userId, message: msg, kind: "REMINDER" },
     });
     io.to(`user:${t.userId}`).emit("notification", n);
   }
@@ -98,7 +143,7 @@ cron.schedule("*/5 * * * *", async () => {
       data: {
         userId: t.userId,
         message: `Overdue task: "${t.title}". Consider rescheduling.`,
-        kind: NotificationKind.DEADLINE,
+        kind: "DEADLINE",
       },
     });
     io.to(`user:${t.userId}`).emit("notification", n);

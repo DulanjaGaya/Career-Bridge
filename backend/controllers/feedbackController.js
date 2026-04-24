@@ -5,6 +5,44 @@
 
 const Feedback = require('../models/Feedback')
 
+const RESOURCE_FEEDBACK_TYPE = 'Other';
+
+exports.getResourceFeedback = async (req, res) => {
+  try {
+    const { resourceId } = req.params;
+
+    const feedbacks = await Feedback.find({ resourceId })
+      .populate('userId', 'name email')
+      .sort({ createdAt: -1 });
+
+    const totalReviews = feedbacks.length;
+    const averageRating = totalReviews > 0
+      ? Number((feedbacks.reduce((sum, item) => sum + Number(item.rating || 0), 0) / totalReviews).toFixed(1))
+      : 0;
+
+    const formattedFeedbacks = feedbacks.map((item) => {
+      const feedback = item.toObject();
+      return {
+        ...feedback,
+        comment: feedback.message,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      averageRating,
+      totalReviews,
+      feedbacks: formattedFeedbacks,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching resource feedback',
+      error: error.message,
+    });
+  }
+};
+
 // 🔹 GET FEEDBACK (Everyone → all feedbacks, supports filters, sorting, and pagination)
 exports.getFeedback = async (req, res) => {
   try {
@@ -92,7 +130,9 @@ exports.getFeedback = async (req, res) => {
 // 🔹 CREATE FEEDBACK (User only)
 exports.createFeedback = async (req, res) => {
   try {
-    const { message, rating, type } = req.body;
+    const { message, comment, rating, type, resourceId } = req.body;
+    const feedbackMessage = (message ?? comment ?? '').trim();
+    const feedbackType = type || RESOURCE_FEEDBACK_TYPE;
 
     // ❗ Prevent admin from creating
     if (req.user.role === 'admin') {
@@ -103,28 +143,28 @@ exports.createFeedback = async (req, res) => {
     }
 
     // Validate message
-    if (!message || !message.trim()) {
+    if (!feedbackMessage) {
       return res.status(400).json({
         success: false,
         message: 'Feedback message is required'
       });
     }
 
-    if (!/[a-zA-Z]/.test(message)) {
+    if (!/[a-zA-Z]/.test(feedbackMessage)) {
       return res.status(400).json({
         success: false,
         message: 'Feedback must contain at least one letter'
       });
     }
 
-    if (message.trim().length < 5) {
+    if (feedbackMessage.length < 5) {
       return res.status(400).json({
         success: false,
         message: 'Feedback must be at least 5 characters'
       });
     }
 
-    if (message.trim().length > 1000) {
+    if (feedbackMessage.length > 1000) {
       return res.status(400).json({
         success: false,
         message: 'Feedback must not exceed 1000 characters'
@@ -149,18 +189,26 @@ exports.createFeedback = async (req, res) => {
 
     // Validate type
     const validTypes = ['Bug', 'Feature Request', 'UX', 'Other'];
-    if (!type || !validTypes.includes(type)) {
+    if (!validTypes.includes(feedbackType)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid feedback type'
       });
     }
 
-    const feedback = await Feedback.create({
-      message: message.trim(),
+    const payload = {
+      message: feedbackMessage,
       rating: ratingNum,
-      type,
-      userId: req.user._id
+      type: feedbackType,
+      userId: req.user._id,
+    };
+
+    if (resourceId) {
+      payload.resourceId = resourceId;
+    }
+
+    const feedback = await Feedback.create({
+      ...payload
     });
 
     await feedback.populate('userId', 'name email');
