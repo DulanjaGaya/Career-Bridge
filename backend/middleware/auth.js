@@ -1,33 +1,32 @@
-/**
- * Authentication Middleware
- * Verifies JWT token and attaches user to request
- */
-const jwt = require('jsonwebtoken')
-const User = require('../models/User')
+const jwt = require('jsonwebtoken');
 
-const auth = async (req, res, next) => {
-  try {
-    // Get token from header
-    const token = req.header('Authorization')?.replace('Bearer ', '')
+const authenticateUser = (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
-    if (!token) {
-      return res.status(401).json({ message: 'No authorization token' })
-    }
-
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET)
-
-    // Find user
-    const user = await User.findById(decoded.id)
-    if (!user) {
-      return res.status(401).json({ message: 'User not found' })
-    }
-
-    req.user = user
-    next()
-  } catch (error) {
-    res.status(401).json({ message: 'Invalid token' })
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication token missing'
+    });
   }
-}
 
-module.exports = auth
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = {
+      userId: decoded.userId || decoded.id,
+      role: decoded.role || 'student',
+      email: decoded.email,
+    };
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: error.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token'
+    });
+  }
+};
+
+module.exports = authenticateUser;
+module.exports.authenticateUser = authenticateUser;

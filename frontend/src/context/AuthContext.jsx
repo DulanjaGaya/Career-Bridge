@@ -1,100 +1,60 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { authService } from '../services/authService';
 
-/**
- * AuthContext - Manages user authentication state
- * Provides methods for login, logout, and signup
- */
-const AuthContext = createContext()
+export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [token, setToken] = useState(localStorage.getItem('token') || null)
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  // Check if user is logged in on app load
   useEffect(() => {
-    const storedToken = localStorage.getItem('token')
-    const storedUser = localStorage.getItem('user')
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken)
-      setUser(JSON.parse(storedUser))
+    const currentUser = authService.getCurrentUser();
+    if (currentUser) {
+      setUser(currentUser);
     }
-    setIsLoading(false)
-  }, [])
+    setIsLoading(false);
+  }, []);
 
-  // Login user
-  const login = async (email, password) => {
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      })
+  const login = async (credentials, role = 'student') => {
+    const data = role === 'employer'
+      ? await authService.loginEmployer(credentials)
+      : await authService.loginStudent(credentials);
+    setUser(data.user);
+    queryClient.clear();
+    return data;
+  };
 
-      const data = await response.json()
+  const register = async (userData, role = 'student') => {
+    const data = role === 'employer'
+      ? await authService.registerEmployer(userData)
+      : await authService.registerStudent(userData);
+    setUser(data.user);
+    queryClient.clear();
+    return data;
+  };
 
-      if (!response.ok) {
-        return { success: false, error: data.message || 'Login failed' }
-      }
+  const registerStudent = (userData) => register(userData, 'student');
+  const registerEmployer = (userData) => register(userData, 'employer');
 
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
-      setToken(data.token)
-      setUser(data.user)
-
-      return { success: true, user: data.user }
-    } catch (error) {
-      return { success: false, error: error.message || 'Login failed' }
-    }
-  }
-
-  // Signup user
-  const signup = async (name, email, password, role = 'student') => {
-    try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, role })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        return { success: false, error: data.message || 'Signup failed' }
-      }
-
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
-      setToken(data.token)
-      setUser(data.user)
-
-      return { success: true, user: data.user }
-    } catch (error) {
-      return { success: false, error: error.message || 'Signup failed' }
-    }
-  }
-
-  // Logout user
   const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setToken(null)
-    setUser(null)
-  }
+    authService.logout();
+    setUser(null);
+    queryClient.clear();
+  };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, signup, register: signup, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, loading: isLoading, login, register, registerStudent, registerEmployer, logout }}>
       {children}
     </AuthContext.Provider>
-  )
-}
+  );
+};
 
-// Custom hook to use AuthContext
 export const useAuth = () => {
-  const context = useContext(AuthContext)
+  const context = React.useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider')
+    throw new Error('useAuth must be used within AuthProvider');
   }
-  return context
-}
+  return context;
+};
