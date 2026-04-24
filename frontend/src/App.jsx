@@ -7,6 +7,10 @@ import { useAuth } from './hooks/useAuth';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import CreateLobby from './pages/Lobby/CreateLobby';
+import LobbyList from './pages/Lobby/LobbyList';
+import LobbyRoom from './pages/Lobby/LobbyRoom';
+import ResourceTracker from './pages/Resource/ResourceTracker';
 import BrowseJobs from './pages/student/BrowseJobs';
 import JobDetailsPage from './pages/student/JobDetailsPage';
 import StudentDashboardPage from './pages/student/StudentDashboardPage';
@@ -59,6 +63,38 @@ const App = () => {
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/qa" element={user ? <EnhancedQAPage /> : <Navigate to="/login" replace />} />
           <Route path="/feedback" element={user ? <FeedbackPage /> : <Navigate to="/login" replace />} />
+          <Route
+            path="/lobbies"
+            element={
+              <ProtectedRoute>
+                <LobbyList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lobbies/create"
+            element={
+              <ProtectedRoute>
+                <CreateLobby />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lobbies/:id"
+            element={
+              <ProtectedRoute>
+                <LobbyRoom />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resources"
+            element={
+              <ProtectedRoute>
+                <ResourceTracker />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/browse-jobs" element={<BrowseJobs />} />
           <Route path="/jobs/:id" element={<JobDetailsPage />} />
           <Route

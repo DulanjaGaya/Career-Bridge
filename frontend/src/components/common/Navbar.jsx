@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
-import { FiBriefcase, FiUser, FiLogOut, FiBarChart2, FiFileText, FiPlus, FiMenu, FiX, FiBell, FiExternalLink, FiCheckCircle } from 'react-icons/fi';
+import { FiBriefcase, FiUser, FiLogOut, FiBarChart2, FiFileText, FiPlus, FiMenu, FiX, FiBell, FiExternalLink, FiCheckCircle, FiChevronDown, FiBookOpen, FiLayers, FiPlayCircle } from 'react-icons/fi';
 import { notificationService } from '../../services/notificationService';
 
 const Navbar = () => {
@@ -10,10 +10,12 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isPracticeMenuOpen, setIsPracticeMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const notificationMenuRef = useRef(null);
+  const practiceMenuRef = useRef(null);
 
   const loadNotifications = async () => {
     if (!user) return;
@@ -49,6 +51,10 @@ const Navbar = () => {
     const handleClickOutside = (event) => {
       if (notificationMenuRef.current && !notificationMenuRef.current.contains(event.target)) {
         setIsNotificationOpen(false);
+      }
+
+      if (practiceMenuRef.current && !practiceMenuRef.current.contains(event.target)) {
+        setIsPracticeMenuOpen(false);
       }
     };
 
@@ -128,6 +134,56 @@ const Navbar = () => {
             <Link to="/browse-jobs" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition">
               Browse Jobs
             </Link>
+            <div className="relative" ref={practiceMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsPracticeMenuOpen((current) => !current)}
+                className="flex items-center gap-1.5 text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition"
+                aria-haspopup="menu"
+                aria-expanded={isPracticeMenuOpen}
+              >
+                Interview Practice
+                <FiChevronDown className={`h-4 w-4 transition-transform ${isPracticeMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isPracticeMenuOpen && (
+                <div className="absolute left-0 mt-2 w-64 rounded-2xl border border-slate-700 bg-[#101935] shadow-2xl overflow-hidden z-50">
+                  <Link
+                    to="/lobbies"
+                    onClick={() => setIsPracticeMenuOpen(false)}
+                    className="flex items-start gap-3 px-4 py-3 text-sm text-slate-200 hover:bg-slate-900/70 hover:text-primary-300 transition"
+                  >
+                    <FiPlayCircle className="mt-0.5 h-4 w-4 text-primary-400" />
+                    <span>
+                      <span className="block font-semibold text-slate-100">Lobby list</span>
+                      <span className="block text-xs text-slate-400">Join a live mock interview room</span>
+                    </span>
+                  </Link>
+                  <Link
+                    to="/lobbies/create"
+                    onClick={() => setIsPracticeMenuOpen(false)}
+                    className="flex items-start gap-3 px-4 py-3 text-sm text-slate-200 hover:bg-slate-900/70 hover:text-primary-300 transition border-t border-slate-800"
+                  >
+                    <FiLayers className="mt-0.5 h-4 w-4 text-primary-400" />
+                    <span>
+                      <span className="block font-semibold text-slate-100">Create lobby</span>
+                      <span className="block text-xs text-slate-400">Host a timed practice session</span>
+                    </span>
+                  </Link>
+                  <Link
+                    to="/resources"
+                    onClick={() => setIsPracticeMenuOpen(false)}
+                    className="flex items-start gap-3 px-4 py-3 text-sm text-slate-200 hover:bg-slate-900/70 hover:text-primary-300 transition border-t border-slate-800"
+                  >
+                    <FiBookOpen className="mt-0.5 h-4 w-4 text-primary-400" />
+                    <span>
+                      <span className="block font-semibold text-slate-100">Resource tracker</span>
+                      <span className="block text-xs text-slate-400">Track prep material and progress</span>
+                    </span>
+                  </Link>
+                </div>
+              )}
+            </div>
             <Link to="/faq" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition">
               FAQ
             </Link>
@@ -297,6 +353,21 @@ const Navbar = () => {
               <Link to="/browse-jobs" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                 Browse Jobs
               </Link>
+              <div className="border-t border-slate-800 pt-3">
+                <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Interview Practice</p>
+                <Link to="/lobbies" className="flex items-center gap-2 text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                  <FiPlayCircle />
+                  Lobby list
+                </Link>
+                <Link to="/lobbies/create" className="flex items-center gap-2 text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                  <FiLayers />
+                  Create lobby
+                </Link>
+                <Link to="/resources" className="flex items-center gap-2 text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                  <FiBookOpen />
+                  Resource tracker
+                </Link>
+              </div>
               <Link to="/faq" className="text-slate-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
                 FAQ
               </Link>

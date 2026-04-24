@@ -29,22 +29,42 @@ app.use('/api/faqs', faqRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/questions', questionRoutes);
 
-app.get('/health', (req, res) => {
-  res.json({ message: 'Career Bridge API is running' });
-});
+(async () => {
+  const [lobbyRoutesModule, resourceRoutesModule, answerRoutesModule, progressRoutesModule] = await Promise.all([
+    import('./routes/lobbyRoutes.js'),
+    import('./routes/resourceRoutes.js'),
+    import('./routes/answerRoutes.js'),
+    import('./routes/progressRoutes.js'),
+  ]);
 
-app.use((req, res) => {
-  res.status(404).json({ message: 'Route not found' });
-});
+  app.use('/api/lobbies', lobbyRoutesModule.default);
+  app.use('/api/resources', resourceRoutesModule.default);
+  app.use('/api/answers', answerRoutesModule.default);
+  app.use('/api/progress', progressRoutesModule.default);
 
-app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ message: 'Internal server error' });
-});
+  app.get('/health', (req, res) => {
+    res.json({ message: 'Career Bridge API is running' });
+  });
 
-const PORT = process.env.PORT || 5000;
+  app.use((req, res) => {
+    res.status(404).json({ message: 'Route not found' });
+  });
 
-app.listen(PORT, () => {
-  console.log(`Career Bridge Backend running on port ${PORT}`);
-  console.log(`Make sure MongoDB is running on ${process.env.MONGODB_URI || 'mongodb://localhost:27017/career-bridge'}`);
+  app.use((err, req, res, next) => {
+    console.error(err);
+    const statusCode = res.statusCode && res.statusCode !== 200 ? res.statusCode : (err.statusCode || 500);
+    res.status(statusCode).json({
+      message: err.message || 'Internal server error',
+    });
+  });
+
+  const PORT = process.env.PORT || 5000;
+
+  app.listen(PORT, () => {
+    console.log(`Career Bridge Backend running on port ${PORT}`);
+    console.log(`Make sure MongoDB is running on ${process.env.MONGODB_URI || 'mongodb://localhost:27017/career-bridge'}`);
+  });
+})().catch((error) => {
+  console.error('Failed to start Career Bridge backend:', error);
+  process.exit(1);
 });
